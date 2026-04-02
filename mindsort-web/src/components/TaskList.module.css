@@ -1,0 +1,14 @@
+.list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 50px;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-hint);
+  font-size: 14px;
+}
