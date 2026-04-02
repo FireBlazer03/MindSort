@@ -7,7 +7,7 @@ export async function processAudio(
   apiKey: string
 ): Promise<{ tasks: MindTask[]; error?: string }> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   const arrayBuffer = await audioBlob.arrayBuffer();
   const base64Audio = btoa(
