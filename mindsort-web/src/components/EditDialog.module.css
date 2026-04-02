@@ -1,0 +1,91 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  animation: fadeIn 150ms ease;
+}
+
+.dialog {
+  background: #212121;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 380px;
+}
+
+.heading {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--text-hint);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 200ms;
+}
+
+.input:focus {
+  border-bottom-color: var(--color-amber);
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.cancelBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.saveBtn {
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: var(--color-amber);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.saveBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: rgba(255, 193, 7, 0.08);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
