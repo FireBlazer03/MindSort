@@ -53,6 +53,13 @@ export default function Home() {
           return;
         }
 
+        // Audio blobs under 1KB are almost certainly silence/empty
+        if (blob.size < 1000) {
+          setError("Recording too short or silent. Please speak clearly and try again.");
+          setRecordingState("idle");
+          return;
+        }
+
         const result = await processAudio(blob, apiKey);
 
         if (result.error) {

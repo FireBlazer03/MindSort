@@ -20,17 +20,18 @@ export async function processAudio(
   const now = new Date().toISOString();
 
   const prompt =
-    `You are an executive assistant. The current date and time is ${now}. ` +
-    "Listen to this audio clip and extract lists. \n" +
-    "1. 'tasks': Simple strings.\n" +
-    "2. 'events': Objects with 'title' (string) and 'time' (ISO 8601 String, e.g., '2026-02-12T14:30:00'). If no time is mentioned, use null.\n" +
-    "3. 'notes': Simple strings.\n\n" +
-    "Return ONLY valid JSON. Do not use Markdown formatting. Format:\n" +
-    "{ \n" +
-    "  \"tasks\": [\"Buy milk\"], \n" +
-    '  "events": [{ "title": "Meeting", "time": "2026-02-12T14:30:00" }], \n' +
-    '  "notes": ["I am tired"] \n' +
-    "}";
+    `You are a strict transcription assistant. The current date and time is ${now}.\n\n` +
+    "Listen to this audio clip carefully. Extract ONLY what the speaker EXPLICITLY said. Categorize into:\n" +
+    "1. 'tasks': Action items the speaker explicitly mentioned.\n" +
+    "2. 'events': Events the speaker explicitly mentioned, as objects with 'title' (string) and 'time' (ISO 8601 string). If no specific time was spoken, use null.\n" +
+    "3. 'notes': Other thoughts or information the speaker explicitly stated.\n\n" +
+    "CRITICAL RULES:\n" +
+    "- ONLY include things the speaker ACTUALLY SAID. Do NOT invent, assume, or infer tasks.\n" +
+    "- If the audio is silent, unclear, contains only noise, or has no actionable speech, return: { \"tasks\": [], \"events\": [], \"notes\": [] }\n" +
+    "- Do NOT generate example or placeholder content. Empty arrays are the correct response for unclear audio.\n" +
+    "- Use the speaker's exact words. Do not rephrase or embellish.\n\n" +
+    "Return ONLY valid JSON. No Markdown formatting. Format:\n" +
+    '{ "tasks": [], "events": [], "notes": [] }';
 
   const mimeType = audioBlob.type || "audio/webm";
 
