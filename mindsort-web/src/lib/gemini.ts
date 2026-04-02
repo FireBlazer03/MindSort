@@ -10,9 +10,12 @@ export async function processAudio(
   const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   const arrayBuffer = await audioBlob.arrayBuffer();
-  const base64Audio = btoa(
-    String.fromCharCode(...new Uint8Array(arrayBuffer))
-  );
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64Audio = btoa(binary);
 
   const now = new Date().toISOString();
 

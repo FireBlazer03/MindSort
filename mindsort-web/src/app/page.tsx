@@ -47,16 +47,22 @@ export default function Home() {
         setError(null);
 
         const blob = await stopRecording();
-        if (blob) {
-          const result = await processAudio(blob, apiKey);
+        if (!blob || blob.size === 0) {
+          setError("Recording failed — no audio captured. Please try again.");
+          setRecordingState("idle");
+          return;
+        }
 
-          if (result.error) {
-            setError(result.error);
-          }
+        const result = await processAudio(blob, apiKey);
 
-          if (result.tasks.length > 0) {
-            setTasks((prev) => [...result.tasks, ...prev]);
-          }
+        if (result.error) {
+          setError(result.error);
+        }
+
+        if (result.tasks.length > 0) {
+          setTasks((prev) => [...result.tasks, ...prev]);
+        } else if (!result.error) {
+          setError("No tasks, events, or notes were found in your recording. Try speaking more clearly.");
         }
 
         setRecordingState("idle");
