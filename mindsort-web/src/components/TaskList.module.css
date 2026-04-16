@@ -10,5 +10,8 @@
   align-items: center;
   justify-content: center;
   color: var(--text-hint);
-  font-size: 14px;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-align: center;
+  padding: 40px 24px;
 }

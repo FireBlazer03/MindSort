@@ -112,6 +112,7 @@ export default function TaskCard({
         style={{
           transform: `translateX(${offsetX}px)`,
           transition: swiping ? "none" : "transform 200ms ease",
+          ['--type-color' as string]: config.color,
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

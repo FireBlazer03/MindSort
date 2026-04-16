@@ -1,11 +1,13 @@
 .banner {
-  padding: 12px;
-  margin: 12px;
-  background: rgba(255, 82, 82, 0.1);
-  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 8px 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border-left: 3px solid var(--color-red);
+  border-radius: 0 8px 8px 0;
 }
 
 .text {
   color: var(--color-red);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.5;
 }

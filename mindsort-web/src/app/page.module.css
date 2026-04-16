@@ -5,13 +5,15 @@
   max-width: 600px;
   margin: 0 auto;
   width: 100%;
+  position: relative;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .headerSpacer {
@@ -19,10 +21,14 @@
 }
 
 .title {
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
   text-align: center;
-  color: var(--text-primary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .headerActions {
@@ -42,17 +48,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 200ms, transform 150ms;
 }
 
 .iconBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.05);
 }
 
 .micSection {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 0;
+  padding: 24px 0;
   gap: 20px;
 }
 
@@ -62,6 +70,6 @@
 
 .divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
   margin: 0 16px;
 }

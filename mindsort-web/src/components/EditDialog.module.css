@@ -1,7 +1,9 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -10,11 +12,13 @@
 }
 
 .dialog {
-  background: #212121;
-  border-radius: 12px;
-  padding: 24px;
+  background: rgba(14, 14, 24, 0.97);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 28px;
   width: 90%;
   max-width: 380px;
+  box-shadow: var(--shadow-modal);
 }
 
 .heading {
@@ -26,22 +30,23 @@
 
 .input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 10px 0;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--text-hint);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 15px;
+  font-family: inherit;
   outline: none;
   transition: border-color 200ms;
 }
 
 .input:focus {
-  border-bottom-color: var(--color-amber);
+  border-bottom-color: var(--accent-purple);
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.3);
 }
 
 .actions {
@@ -57,21 +62,23 @@
   border: none;
   color: var(--text-secondary);
   font-size: 14px;
+  font-family: inherit;
   cursor: pointer;
   border-radius: 6px;
 }
 
 .cancelBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .saveBtn {
   padding: 8px 16px;
   background: transparent;
   border: none;
-  color: var(--color-amber);
+  color: var(--accent-purple);
   font-size: 14px;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
   border-radius: 6px;
 }
@@ -82,7 +89,7 @@
 }
 
 .saveBtn:hover:not(:disabled) {
-  background: rgba(255, 193, 7, 0.08);
+  background: rgba(124, 58, 237, 0.1);
 }
 
 @keyframes fadeIn {
