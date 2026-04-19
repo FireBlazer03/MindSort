@@ -7,6 +7,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:add_2_calendar/add_2_calendar.dart'; 
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'gemini_helper.dart';
 import 'platform_utils.dart';
 
@@ -104,6 +106,18 @@ class _RecordingScreenState extends State<RecordingScreen> {
   }
 
   // --- STORAGE LOGIC ---
+  Future<void> _loadTasks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? tasksString = prefs.getString('saved_tasks');
+    
+    if (tasksString != null) {
+      final List<dynamic> decoded = jsonDecode(tasksString);
+      setState(() {
+        _parsedTasks = decoded.map((item) => MindTask.fromJson(item)).toList();
+      });
+    }
+  }
+
   Future<void> _loadApiKey() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -135,10 +149,23 @@ class _RecordingScreenState extends State<RecordingScreen> {
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
+              "Get your free key from Google AI Studio:",
+              style: TextStyle(fontSize: 14, color: Colors.white70),
+            ),
+            InkWell(
+              onTap: () => launchUrl(Uri.parse("https://aistudio.google.com/app/apikey")),
+              child: const Text(
+                "https://aistudio.google.com/app/apikey",
+                style: TextStyle(fontSize: 12, color: Colors.blueAccent, decoration: TextDecoration.underline),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
               "Your key is saved locally on this device and never sent to our servers.",
-              style: TextStyle(fontSize: 12, color: Colors.white54),
+              style: TextStyle(fontSize: 11, color: Colors.white38),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -251,6 +278,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   Future<void> _toggleRecording() async {
     try {
+      HapticFeedback.heavyImpact(); // Vibrate on tap
       if (_isListening) {
         final path = await _audioRecorder.stop();
 
