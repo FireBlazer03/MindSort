@@ -701,7 +701,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, py: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: accentColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(6),
@@ -716,6 +716,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                         )
                       ),
                     ),
+
                     if (item.startTime != null) ...[
                       const SizedBox(width: 12),
                       const Icon(Icons.access_time, size: 14, color: Colors.white38),
@@ -738,7 +739,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                     ),
                   if (item.type == 'event')
                     IconButton(
-                      icon: const Icon(Icons.calendar_add_on_rounded, color: Colors.amber, size: 20),
+                      icon: const Icon(Icons.calendar_month_rounded, color: Colors.amber, size: 20),
                       onPressed: () => _addToCalendar(item),
                     ),
                 ],
