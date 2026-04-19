@@ -54,4 +54,63 @@ class GeminiHelper {
     }
     return "Error: Server is too busy. Please try a shorter recording.";
   }
+
+  static Future<String?> processImage(String filePath) async {
+    final model = GenerativeModel(
+      model: 'gemini-3-flash-preview',
+      apiKey: _apiKey,
+    );
+
+    final file = File(filePath);
+    final bytes = await file.readAsBytes();
+    final now = DateTime.now();
+
+    final prompt = TextPart(
+      "You are an executive assistant. The current date and time is $now. "
+      "Look at this image (note, receipt, or screenshot) and extract lists. \n"
+      "1. 'tasks': Simple strings.\n"
+      "2. 'events': Objects with 'title' (string) and 'time' (ISO 8601 String). If no time is mentioned, use null.\n"
+      "3. 'notes': Simple strings.\n\n"
+      "Return ONLY valid JSON. Format:\n"
+      "{ \n"
+      "  'tasks': ['Buy milk'], \n"
+      "  'events': [{ 'title': 'Meeting', 'time': '2026-02-12T14:30:00' }], \n"
+      "  'notes': ['I am tired'] \n"
+      "}"
+    );
+
+    final content = Content.multi([
+      prompt,
+      DataPart('image/jpeg', bytes),
+    ]);
+
+    try {
+      final response = await model.generateContent([content]);
+      return response.text;
+    } catch (e) {
+      return "Error: $e";
+    }
+  }
+
+  static Future<String?> chunkTask(String taskTitle) async {
+    final model = GenerativeModel(
+      model: 'gemini-3-flash-preview',
+      apiKey: _apiKey,
+    );
+
+    final prompt = [
+      Content.text(
+        "Break down this complex task or note into a logical list of 3-5 small, actionable sub-tasks. \n"
+        "Task: '$taskTitle' \n\n"
+        "Return ONLY a JSON array of strings. Example: ['Step 1', 'Step 2', 'Step 3']"
+      )
+    ];
+
+    try {
+      final response = await model.generateContent(prompt);
+      return response.text;
+    } catch (e) {
+      return null;
+    }
+  }
 }
