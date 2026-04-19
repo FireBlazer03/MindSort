@@ -379,6 +379,43 @@ class _RecordingScreenState extends State<RecordingScreen> {
     }
   }
 
+  Future<void> _showRecapDialog() async {
+    setState(() => _isProcessing = true);
+    
+    final tasksJson = jsonEncode(_parsedTasks.map((t) => t.toJson()).toList());
+    final recap = await GeminiHelper.generateRecap(tasksJson);
+    
+    setState(() => _isProcessing = false);
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded, color: Colors.amber),
+            SizedBox(width: 8),
+            Text("Weekly Recap"),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            recap ?? "Failed to generate recap.",
+            style: const TextStyle(color: Colors.white70, height: 1.5),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close", style: TextStyle(color: Colors.amber)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -388,6 +425,11 @@ class _RecordingScreenState extends State<RecordingScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          if (_parsedTasks.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
+              onPressed: _isProcessing ? null : _showRecapDialog,
+            ),
           if (_parsedTasks.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_forever_rounded, color: Colors.white24),

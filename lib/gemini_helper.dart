@@ -113,4 +113,28 @@ class GeminiHelper {
       return null;
     }
   }
+
+  static Future<String?> generateRecap(String allTasksJson) async {
+    final model = GenerativeModel(
+      model: 'gemini-3-flash-preview',
+      apiKey: _apiKey,
+    );
+
+    final prompt = [
+      Content.text(
+        "You are a productivity coach. Here is a JSON list of my current tasks, events, and notes: \n"
+        "$allTasksJson \n\n"
+        "Generate a brief, encouraging 'Weekly Recap' (3-4 short paragraphs). "
+        "Highlight my main priorities, group similar tasks together, and gently remind me of any events. "
+        "Keep the tone professional yet motivational. Do not use markdown code blocks, just plain text with emojis."
+      )
+    ];
+
+    try {
+      final response = await model.generateContent(prompt);
+      return response.text;
+    } catch (e) {
+      return "Error generating recap: $e";
+    }
+  }
 }
