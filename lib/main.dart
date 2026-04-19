@@ -17,6 +17,7 @@ class MindTask {
   final String id;
   final String title;
   final String type;
+  final String priority; // NEW: High, Medium, Low
   final DateTime? startTime;
   final List<String> subTasks;
 
@@ -24,6 +25,7 @@ class MindTask {
     required this.id, 
     required this.title, 
     required this.type,
+    this.priority = 'Medium',
     this.startTime,
     this.subTasks = const [],
   });
@@ -32,6 +34,7 @@ class MindTask {
     'id': id,
     'title': title,
     'type': type,
+    'priority': priority,
     'startTime': startTime?.toIso8601String(),
     'subTasks': subTasks,
   };
@@ -41,6 +44,7 @@ class MindTask {
       id: json['id'] ?? DateTime.now().toString(),
       title: json['title'],
       type: json['type'],
+      priority: json['priority'] ?? 'Medium',
       startTime: json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
       subTasks: List<String>.from(json['subTasks'] ?? []),
     );
@@ -86,6 +90,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
   String? _error;
   String _currentFilter = 'All'; // NEW: Filter state
   String? _userApiKey; // NEW: User API Key
+  final TextEditingController _searchController = TextEditingController(); // NEW: Search
+  String _searchQuery = ""; // NEW: Search state
 
   @override
   void initState() {
@@ -343,9 +349,12 @@ class _RecordingScreenState extends State<RecordingScreen> {
       
       if (data['tasks'] != null) {
         for (var item in data['tasks']) {
+          final String title = item is Map ? (item['title'] ?? '') : item.toString();
+          final String priority = item is Map ? (item['priority'] ?? 'Medium') : 'Medium';
           newTasks.add(MindTask(
-            id: DateTime.now().toString() + item.toString(),
-            title: item.toString(),
+            id: DateTime.now().toString() + title,
+            title: title,
+            priority: priority,
             type: 'task'
           ));
         }
@@ -355,16 +364,11 @@ class _RecordingScreenState extends State<RecordingScreen> {
         for (var item in data['events']) {
           if (item is Map) {
              newTasks.add(MindTask(
-              id: DateTime.now().toString() + item['title'],
-              title: item['title'],
+              id: DateTime.now().toString() + (item['title'] ?? ''),
+              title: item['title'] ?? '',
+              priority: item['priority'] ?? 'Medium',
               type: 'event',
               startTime: item['time'] != null ? DateTime.parse(item['time']) : null,
-            ));
-          } else {
-             newTasks.add(MindTask(
-              id: DateTime.now().toString() + item.toString(),
-              title: item.toString(),
-              type: 'event'
             ));
           }
         }
@@ -372,9 +376,12 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
       if (data['notes'] != null) {
         for (var item in data['notes']) {
+          final String title = item is Map ? (item['title'] ?? '') : item.toString();
+          final String priority = item is Map ? (item['priority'] ?? 'Low') : 'Low';
           newTasks.add(MindTask(
-            id: DateTime.now().toString() + item.toString(),
-            title: item.toString(),
+            id: DateTime.now().toString() + title,
+            title: title,
+            priority: priority,
             type: 'note'
           ));
         }
@@ -558,8 +565,32 @@ class _RecordingScreenState extends State<RecordingScreen> {
       ),
       body: Column(
         children: [
+          const SizedBox(height: 10),
+
+          // SEARCH BAR
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: "Search thoughts or priorities...",
+                hintStyle: const TextStyle(color: Colors.white24),
+                prefixIcon: const Icon(Icons.search_rounded, color: Colors.white24),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.03),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+
           const SizedBox(height: 20),
-          
+
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -568,36 +599,57 @@ class _RecordingScreenState extends State<RecordingScreen> {
               Center(
                 child: GestureDetector(
                   onTap: _isProcessing ? null : _toggleRecording,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    height: _isListening ? 160 : 130,
-                    width: _isListening ? 160 : 130,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: _isProcessing 
-                            ? [Colors.amber, Colors.orange]
-                            : (_isListening 
-                                ? [Colors.redAccent, Colors.pinkAccent] 
-                                : [const Color(0xFF6200EE), const Color(0xFF3700B3)]),
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_isListening || _isProcessing)
-                              ? (_isProcessing ? Colors.amber : Colors.redAccent).withOpacity(0.5)
-                              : Colors.black45,
-                          blurRadius: 30,
-                          spreadRadius: _isListening ? 10 : 2,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (_isListening)
+                        TweenAnimationBuilder(
+                          tween: Tween(begin: 0.0, end: 1.0),
+                          duration: const Duration(seconds: 1),
+                          onEnd: () => {}, // Handled by repeat
+                          builder: (context, double value, child) {
+                            return Container(
+                              width: 130 + (20 * value),
+                              height: 130 + (20 * value),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.redAccent.withOpacity(1 - value), width: 2),
+                              ),
+                            );
+                          },
                         ),
-                      ],
-                    ),
-                    child: Icon(
-                      _isProcessing ? Icons.sync_rounded : (_isListening ? Icons.stop_rounded : Icons.mic_rounded),
-                      size: 50,
-                      color: Colors.white,
-                    ),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: _isListening ? 160 : 130,
+                        width: _isListening ? 160 : 130,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: _isProcessing 
+                                ? [Colors.amber, Colors.orange]
+                                : (_isListening 
+                                    ? [Colors.redAccent, Colors.pinkAccent] 
+                                    : [const Color(0xFF6200EE), const Color(0xFF3700B3)]),
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: (_isListening || _isProcessing)
+                                  ? (_isProcessing ? Colors.amber : Colors.redAccent).withOpacity(0.5)
+                                  : Colors.black45,
+                              blurRadius: 30,
+                              spreadRadius: _isListening ? 10 : 2,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _isProcessing ? Icons.sync_rounded : (_isListening ? Icons.stop_rounded : Icons.mic_rounded),
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -605,7 +657,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
               _buildIconButton(Icons.camera_alt_rounded, () => _pickImage(ImageSource.camera)),
             ],
           ),
-          
+
           const SizedBox(height: 24),
           Text(
             _isProcessing ? "Sorting Brain..." : (_isListening ? "Listening..." : "Voice or Visual Dump"),
@@ -624,7 +676,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
               child: Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
             ),
           const SizedBox(height: 20),
-          
+
           if (_parsedTasks.isNotEmpty) ...[
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -649,9 +701,9 @@ class _RecordingScreenState extends State<RecordingScreen> {
             ),
             const SizedBox(height: 10),
           ],
-          
+
           const Divider(color: Colors.white10, thickness: 1),
-          
+
           Expanded(
             child: _parsedTasks.isEmpty && !_isProcessing
               ? const Center(
@@ -665,13 +717,19 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   itemCount: _parsedTasks.length,
                   itemBuilder: (context, index) {
                     final item = _parsedTasks[index];
-                    if (_currentFilter != 'All' && item.type.toLowerCase() != _currentFilter.toLowerCase()) {
-                      return const SizedBox.shrink();
+
+                    // COMBINED FILTER: Category + Search + Priority
+                    final bool matchesCategory = _currentFilter == 'All' || item.type.toLowerCase() == _currentFilter.toLowerCase();
+                    final bool matchesSearch = item.title.toLowerCase().contains(_searchQuery) || item.priority.toLowerCase().contains(_searchQuery);
+
+                    if (matchesCategory && matchesSearch) {
+                      return _buildTaskCard(item, index);
                     }
-                    return _buildTaskCard(item, index); // Passing Index for editing
+                    return const SizedBox.shrink();
                   },
                 ),
           ),
+
         ],
       ),
     );
@@ -783,13 +841,29 @@ class _RecordingScreenState extends State<RecordingScreen> {
                 ),
                 child: Icon(icon, color: accentColor, size: 24),
               ),
-              title: Text(
-                item.title, 
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                  letterSpacing: 0.3,
-                )
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.title, 
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        letterSpacing: 0.3,
+                      )
+                    ),
+                  ),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: item.priority == 'High' 
+                          ? Colors.redAccent 
+                          : (item.priority == 'Low' ? Colors.blueAccent : Colors.amberAccent),
+                    ),
+                  ),
+                ],
               ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 6),

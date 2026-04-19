@@ -15,14 +15,14 @@ class GeminiHelper {
     final prompt = TextPart(
       "You are an executive assistant. The current date and time is $now. "
       "Listen to this audio clip and extract lists. \n"
-      "1. 'tasks': Simple strings.\n"
-      "2. 'events': Objects with 'title' (string) and 'time' (ISO 8601 String, e.g., '2026-02-12T14:30:00'). If no time is mentioned, use null.\n"
-      "3. 'notes': Simple strings.\n\n"
-      "Return ONLY valid JSON. Do not use Markdown formatting. Format:\n"
+      "1. 'tasks': Objects with 'title' (string) and 'priority' (High, Medium, or Low based on tone/content).\n"
+      "2. 'events': Objects with 'title' (string), 'time' (ISO 8601), and 'priority'.\n"
+      "3. 'notes': Objects with 'title' (string) and 'priority'.\n\n"
+      "Return ONLY valid JSON. Format:\n"
       "{ \n"
-      "  'tasks': ['Buy milk'], \n"
-      "  'events': [{ 'title': 'Meeting', 'time': '2026-02-12T14:30:00' }], \n"
-      "  'notes': ['I am tired'] \n"
+      "  'tasks': [{ 'title': 'Buy milk', 'priority': 'Medium' }], \n"
+      "  'events': [{ 'title': 'Meeting', 'time': '2026-02-12T14:30:00', 'priority': 'High' }], \n"
+      "  'notes': [{ 'title': 'I am tired', 'priority': 'Low' }] \n"
       "}"
     );
 
@@ -61,14 +61,14 @@ class GeminiHelper {
     final prompt = TextPart(
       "You are an executive assistant. The current date and time is $now. "
       "Look at this image (note, receipt, or screenshot) and extract lists. \n"
-      "1. 'tasks': Simple strings.\n"
-      "2. 'events': Objects with 'title' (string) and 'time' (ISO 8601 String). If no time is mentioned, use null.\n"
-      "3. 'notes': Simple strings.\n\n"
+      "1. 'tasks': Objects with 'title' (string) and 'priority' (High, Medium, or Low).\n"
+      "2. 'events': Objects with 'title' (string), 'time' (ISO 8601 String), and 'priority'.\n"
+      "3. 'notes': Objects with 'title' (string) and 'priority'.\n\n"
       "Return ONLY valid JSON. Format:\n"
       "{ \n"
-      "  'tasks': ['Buy milk'], \n"
-      "  'events': [{ 'title': 'Meeting', 'time': '2026-02-12T14:30:00' }], \n"
-      "  'notes': ['I am tired'] \n"
+      "  'tasks': [{ 'title': 'Buy milk', 'priority': 'Medium' }], \n"
+      "  'events': [{ 'title': 'Meeting', 'time': '2026-02-12T14:30:00', 'priority': 'High' }], \n"
+      "  'notes': [{ 'title': 'I am tired', 'priority': 'Low' }] \n"
       "}"
     );
 
