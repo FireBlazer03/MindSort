@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:add_2_calendar/add_2_calendar.dart'; 
 import 'package:image_picker/image_picker.dart';
 import 'gemini_helper.dart';
+import 'platform_utils.dart';
 
 // --- DATA MODEL ---
 class MindTask {
@@ -202,15 +203,17 @@ class _RecordingScreenState extends State<RecordingScreen> {
         }
 
       } else {
-        var status = await Permission.microphone.status;
-        if (!status.isGranted) {
-           status = await Permission.microphone.request();
-           if (!status.isGranted) return;
+        if (!kIsWeb) {
+          var status = await Permission.microphone.status;
+          if (!status.isGranted) {
+            status = await Permission.microphone.request();
+            if (!status.isGranted) return;
+          }
         }
 
-        final directory = await getApplicationDocumentsDirectory();
+        final tempDir = await PlatformUtils.getTempPath();
         final fileName = 'mindsort_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        final filePath = '${directory.path}/$fileName';
+        final filePath = PlatformUtils.joinPath(tempDir, fileName);
 
         await _audioRecorder.start(const RecordConfig(), path: filePath);
         
