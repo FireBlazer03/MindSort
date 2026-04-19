@@ -2,13 +2,10 @@ import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class GeminiHelper {
-  // Use --dart-define=GEMINI_API_KEY=your_key during build/run
-  static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY');
-
-  static Future<String?> processAudio(String filePath) async {
+  static Future<String?> processAudio(String filePath, String apiKey) async {
     final model = GenerativeModel(
       model: 'gemini-3-flash-preview',
-      apiKey: _apiKey,
+      apiKey: apiKey,
     );
 
     final file = File(filePath);
@@ -34,7 +31,6 @@ class GeminiHelper {
       DataPart('audio/mp4', bytes),
     ]);
 
-    // --- NEW: RETRY LOGIC (The Patient System) ---
     int attempts = 0;
     while (attempts < 3) {
       try {
@@ -42,12 +38,9 @@ class GeminiHelper {
         return response.text;
       } catch (e) {
         attempts++;
-        // If it's a "High Traffic" or "Server" error, wait and retry
         if (e.toString().contains('429') || e.toString().contains('503') || e.toString().contains('500')) {
-          print("⚠️ Traffic High. Retrying in ${attempts * 2} seconds...");
-          await Future.delayed(Duration(seconds: attempts * 2)); // Wait 2s, then 4s...
+          await Future.delayed(Duration(seconds: attempts * 2));
         } else {
-          // If it's a real error (like Bad API Key), fail immediately
           return "Error: $e";
         }
       }
@@ -55,10 +48,10 @@ class GeminiHelper {
     return "Error: Server is too busy. Please try a shorter recording.";
   }
 
-  static Future<String?> processImage(String filePath) async {
+  static Future<String?> processImage(String filePath, String apiKey) async {
     final model = GenerativeModel(
       model: 'gemini-3-flash-preview',
-      apiKey: _apiKey,
+      apiKey: apiKey,
     );
 
     final file = File(filePath);
@@ -92,10 +85,10 @@ class GeminiHelper {
     }
   }
 
-  static Future<String?> chunkTask(String taskTitle) async {
+  static Future<String?> chunkTask(String taskTitle, String apiKey) async {
     final model = GenerativeModel(
       model: 'gemini-3-flash-preview',
-      apiKey: _apiKey,
+      apiKey: apiKey,
     );
 
     final prompt = [
@@ -114,10 +107,10 @@ class GeminiHelper {
     }
   }
 
-  static Future<String?> generateRecap(String allTasksJson) async {
+  static Future<String?> generateRecap(String allTasksJson, String apiKey) async {
     final model = GenerativeModel(
       model: 'gemini-3-flash-preview',
-      apiKey: _apiKey,
+      apiKey: apiKey,
     );
 
     final prompt = [

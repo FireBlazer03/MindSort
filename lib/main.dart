@@ -83,25 +83,88 @@ class _RecordingScreenState extends State<RecordingScreen> {
   List<MindTask> _parsedTasks = []; 
   String? _error;
   String _currentFilter = 'All'; // NEW: Filter state
+  String? _userApiKey; // NEW: User API Key
 
   @override
   void initState() {
     super.initState();
     _audioRecorder = AudioRecorder();
-    _loadTasks();
+    _loadInitialData();
+  }
+
+  // --- APP INITIALIZATION ---
+  Future<void> _loadInitialData() async {
+    await _loadTasks();
+    await _loadApiKey();
+    
+    // If no API Key, show the popup after a short delay
+    if (_userApiKey == null || _userApiKey!.isEmpty) {
+      Future.delayed(const Duration(milliseconds: 500), () => _showApiKeyPopup());
+    }
   }
 
   // --- STORAGE LOGIC ---
-  Future<void> _loadTasks() async {
+  Future<void> _loadApiKey() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? tasksString = prefs.getString('saved_tasks');
-    
-    if (tasksString != null) {
-      final List<dynamic> decoded = jsonDecode(tasksString);
-      setState(() {
-        _parsedTasks = decoded.map((item) => MindTask.fromJson(item)).toList();
-      });
-    }
+    setState(() {
+      _userApiKey = prefs.getString('user_api_key');
+    });
+  }
+
+  Future<void> _saveApiKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_api_key', key);
+    setState(() {
+      _userApiKey = key;
+    });
+  }
+
+  void _showApiKeyPopup() {
+    final TextEditingController controller = TextEditingController(text: _userApiKey);
+    showDialog(
+      context: context,
+      barrierDismissible: _userApiKey != null && _userApiKey!.isNotEmpty,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Row(
+          children: [
+            Icon(Icons.vpn_key_rounded, color: Colors.amber),
+            SizedBox(width: 10),
+            Text("Enter Gemini API Key"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Your key is saved locally on this device and never sent to our servers.",
+              style: TextStyle(fontSize: 12, color: Colors.white54),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: "AIzaSy...",
+                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.amber)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                _saveApiKey(controller.text.trim());
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("Save Key", style: TextStyle(color: Colors.amber)),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _saveTasks() async {
@@ -198,7 +261,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
         });
         
         if (path != null) {
-          final result = await GeminiHelper.processAudio(path);
+          final result = await GeminiHelper.processAudio(path, _userApiKey!);
           _handleGeminiResult(result);
         }
 
@@ -344,7 +407,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
           _error = null;
         });
         
-        final result = await GeminiHelper.processImage(image.path);
+        final result = await GeminiHelper.processImage(image.path, _userApiKey!);
         _handleGeminiResult(result);
       }
     } catch (e) {
@@ -359,7 +422,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
     final task = _parsedTasks[index];
     setState(() => _isProcessing = true);
     
-    final result = await GeminiHelper.chunkTask(task.title);
+    final result = await GeminiHelper.chunkTask(task.title, _userApiKey!);
     
     if (result != null) {
       try {
@@ -387,7 +450,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
     setState(() => _isProcessing = true);
     
     final tasksJson = jsonEncode(_parsedTasks.map((t) => t.toJson()).toList());
-    final recap = await GeminiHelper.generateRecap(tasksJson);
+    final recap = await GeminiHelper.generateRecap(tasksJson, _userApiKey!);
     
     setState(() => _isProcessing = false);
 
@@ -434,6 +497,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
               icon: const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
               onPressed: _isProcessing ? null : _showRecapDialog,
             ),
+          IconButton(
+            icon: const Icon(Icons.vpn_key_rounded, color: Colors.white24),
+            onPressed: () => _showApiKeyPopup(),
+          ),
           if (_parsedTasks.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_forever_rounded, color: Colors.white24),
