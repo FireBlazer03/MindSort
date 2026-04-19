@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 class GeminiHelper {
-  // ⚠️ PASTE YOUR API KEY HERE
-  static const String _apiKey = 'AIzaSyCVxVXVYXrRo0NOuOf3szlsKWpwwFrr8h4';
+  // Use --dart-define=GEMINI_API_KEY=your_key during build/run
+  static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY');
 
   static Future<String?> processAudio(String filePath) async {
     final model = GenerativeModel(
