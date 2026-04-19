@@ -81,6 +81,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
   bool _isProcessing = false;
   List<MindTask> _parsedTasks = []; 
   String? _error;
+  String _currentFilter = 'All'; // NEW: Filter state
 
   @override
   void initState() {
@@ -525,6 +526,32 @@ class _RecordingScreenState extends State<RecordingScreen> {
               child: Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
             ),
           const SizedBox(height: 20),
+          
+          if (_parsedTasks.isNotEmpty) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: ['All', 'Task', 'Event', 'Note'].map((filter) {
+                  final isSelected = _currentFilter == filter;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      selected: isSelected,
+                      label: Text(filter, style: TextStyle(color: isSelected ? Colors.black : Colors.white70)),
+                      selectedColor: Colors.amberAccent,
+                      backgroundColor: Colors.white10,
+                      onSelected: (selected) {
+                        setState(() => _currentFilter = filter);
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          
           const Divider(color: Colors.white10, thickness: 1),
           
           Expanded(
@@ -540,6 +567,9 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   itemCount: _parsedTasks.length,
                   itemBuilder: (context, index) {
                     final item = _parsedTasks[index];
+                    if (_currentFilter != 'All' && item.type.toLowerCase() != _currentFilter.toLowerCase()) {
+                      return const SizedBox.shrink();
+                    }
                     return _buildTaskCard(item, index); // Passing Index for editing
                   },
                 ),
