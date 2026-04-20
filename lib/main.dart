@@ -80,7 +80,7 @@ class MindSortApp extends StatelessWidget {
           background: const Color(0xFF09090B),
         ),
         scaffoldBackgroundColor: const Color(0xFF09090B),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: const Color(0xFF18181B), // Zinc-900
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -719,7 +719,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                         boxShadow: [
                           BoxShadow(
                             color: (_isListening || _isProcessing)
-                                ? (_isProcessing ? Colors.amber : Colors.roseAccent).withOpacity(0.4)
+                                ? (_isProcessing ? Colors.amber : Colors.pinkAccent).withOpacity(0.4)
                                 : const Color(0xFF6366F1).withOpacity(0.3),
                             blurRadius: 40,
                             spreadRadius: _isListening ? 10 : 0,
@@ -1063,7 +1063,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
           ),
         if (item.type == 'event')
           IconButton(
-            icon: Icon(Icons.calendar_add_on_outlined, color: Colors.white.withOpacity(0.2), size: 18),
+            icon: Icon(Icons.event_available_outlined, color: Colors.white.withOpacity(0.2), size: 18),
             onPressed: () => _addToCalendar(item),
           ),
       ],
