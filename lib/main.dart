@@ -111,6 +111,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
   bool _isListening = false;
   bool _isProcessing = false;
   List<MindTask> _parsedTasks = []; 
+  int _completedCount = 0; // NEW
   String? _error;
   String _currentFilter = 'All'; // NEW: Filter state
   String? _userApiKey; // NEW: User API Key
@@ -190,11 +191,36 @@ class _RecordingScreenState extends State<RecordingScreen> {
   Future<void> _loadInitialData() async {
     await _loadTasks();
     await _loadApiKey();
+    await _loadCompletedCount(); // NEW
     
     // If no API Key, show the popup after a short delay
     if (_userApiKey == null || _userApiKey!.isEmpty) {
       Future.delayed(const Duration(milliseconds: 500), () => _showApiKeyPopup());
     }
+  }
+
+  Future<void> _loadCompletedCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _completedCount = prefs.getInt('completed_count') ?? 0;
+    });
+  }
+
+  Future<void> _incrementCompletedCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _completedCount++;
+    });
+    await prefs.setInt('completed_count', _completedCount);
+    HapticFeedback.mediumImpact(); // Satisfaction!
+  }
+
+  Future<void> _decrementCompletedCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      if (_completedCount > 0) _completedCount--;
+    });
+    await prefs.setInt('completed_count', _completedCount);
   }
 
   // --- STORAGE LOGIC ---
@@ -608,7 +634,16 @@ class _RecordingScreenState extends State<RecordingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("MindSort"),
+        title: const Text(
+          "MindSort",
+          style: TextStyle(
+            fontFamily: 'serif',
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w600,
+            fontSize: 26,
+            letterSpacing: -0.5,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -630,46 +665,42 @@ class _RecordingScreenState extends State<RecordingScreen> {
             icon: const Icon(Icons.vpn_key_rounded, color: Colors.white24),
             onPressed: () => _showApiKeyPopup(),
           ),
-          if (_parsedTasks.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.delete_forever_rounded, color: Colors.white24),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: Colors.grey[900],
-                    title: const Text("Clear All?"),
-                    content: const Text("This will permanently delete all your sorted thoughts."),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-                      TextButton(
-                        onPressed: () {
-                          setState(() => _parsedTasks = []);
-                          _saveTasks();
-                          Navigator.pop(context);
-                        }, 
-                        child: const Text("Clear", style: TextStyle(color: Colors.redAccent))
-                      ),
-                    ],
-                  ),
-                );
-              },
-            )
         ],
       ),
       body: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          
+          // STATS COUNTER
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _buildStatChip("Done", _completedCount.toString(), const Color(0xFF2DD4BF)),
+                const SizedBox(width: 12),
+                _buildStatChip("Pending", _parsedTasks.length.toString(), const Color(0xFF6366F1)),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 20),
 
           // SEARCH BAR (shadcn style)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Container(
-              height: 44,
+              height: 48,
               decoration: BoxDecoration(
                 color: const Color(0xFF18181B),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white.withOpacity(0.08)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: TextField(
                 controller: _searchController,
@@ -677,10 +708,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
                 style: const TextStyle(fontSize: 14, color: Colors.white),
                 decoration: InputDecoration(
                   hintText: "Search thoughts...",
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
-                  prefixIcon: Icon(Icons.search, size: 18, color: Colors.white.withOpacity(0.3)),
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 14),
+                  prefixIcon: Icon(Icons.search, size: 18, color: Colors.white.withOpacity(0.2)),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
@@ -817,6 +848,41 @@ class _RecordingScreenState extends State<RecordingScreen> {
                 ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatChip(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: color.withOpacity(0.6),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1018,8 +1084,11 @@ class _RecordingScreenState extends State<RecordingScreen> {
     final deletedItem = item;
     final deletedIndex = index;
     _deleteTask(index);
+    _incrementCompletedCount(); // Satisfaction!
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 2), // Fix: Dismiss after 2s
         backgroundColor: const Color(0xFF18181B),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1027,7 +1096,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
         action: SnackBarAction(
           label: 'UNDO', 
           textColor: accentColor,
-          onPressed: () => _restoreTask(deletedIndex, deletedItem)
+          onPressed: () {
+            _restoreTask(deletedIndex, deletedItem);
+            _decrementCompletedCount();
+          }
         ),
       )
     );
