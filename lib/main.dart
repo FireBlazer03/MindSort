@@ -1041,10 +1041,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
                     ),
                     if (item.startTime != null) ...[
                       const SizedBox(width: 12),
-                      Icon(Icons.access_time, size: 12, color: Colors.white.withOpacity(0.3)),
+                      Icon(Icons.calendar_month_outlined, size: 12, color: Colors.white.withOpacity(0.3)),
                       const SizedBox(width: 4),
                       Text(
-                        "${item.startTime!.hour}:${item.startTime!.minute.toString().padLeft(2, '0')}",
+                        "${item.startTime!.day}/${item.startTime!.month} ${item.startTime!.hour}:${item.startTime!.minute.toString().padLeft(2, '0')}",
                         style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.3)),
                       ),
                     ],
@@ -1086,6 +1086,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
     _deleteTask(index);
     _incrementCompletedCount(); // Satisfaction!
 
+    ScaffoldMessenger.of(context).clearSnackBars(); // Ensure old ones are gone
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 2), // Fix: Dismiss after 2s
