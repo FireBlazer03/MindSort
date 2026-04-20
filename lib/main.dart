@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'gemini_helper.dart';
 import 'platform_utils.dart';
+import 'google_tasks_helper.dart';
 
 // --- DATA MODEL ---
 class MindTask {
