@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "810392509452",
+    "project_id": "mindsort-d004c",
+    "storage_bucket": "mindsort-d004c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:810392509452:android:732b4f50c6057ba640e229",
+        "android_client_info": {
+          "package_name": "com.example.mindsort_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "810392509452-mcf0a5c2ikfdm2eub6a8b9jla4lfj9lo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mindsort_app",
+            "certificate_hash": "49537f7978f5b83dc3f8f30099a947405b43530f"
+          }
+        },
+        {
+          "client_id": "810392509452-79e7vp46efuu62i3ngimour5qebu5mdl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMSt4F9ADPeD1-BK5ARD6g_p5WbAbaCuM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "810392509452-79e7vp46efuu62i3ngimour5qebu5mdl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

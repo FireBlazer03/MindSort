@@ -9,6 +9,8 @@ import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'gemini_helper.dart';
 import 'platform_utils.dart';
 import 'google_tasks_helper.dart';
@@ -52,7 +54,11 @@ class MindTask {
   }
 }
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MindSortApp());
 }
 
@@ -65,10 +71,27 @@ class MindSortApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'MindSort',
       theme: ThemeData(
-        brightness: Brightness.dark,
-        primaryColor: const Color(0xFF6200EE),
-        scaffoldBackgroundColor: const Color(0xFF121212),
         useMaterial3: true,
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6366F1), // Indigo
+          brightness: Brightness.dark,
+          surface: const Color(0xFF09090B), // Zinc-950
+          background: const Color(0xFF09090B),
+        ),
+        scaffoldBackgroundColor: const Color(0xFF09090B),
+        cardTheme: CardTheme(
+          color: const Color(0xFF18181B), // Zinc-900
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.white.withOpacity(0.08)),
+          ),
+        ),
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.5),
+          bodyMedium: TextStyle(color: Color(0xFFA1A1AA)), // Zinc-400
+        ),
       ),
       home: const RecordingScreen(),
     );
@@ -94,11 +117,73 @@ class _RecordingScreenState extends State<RecordingScreen> {
   final TextEditingController _searchController = TextEditingController(); // NEW: Search
   String _searchQuery = ""; // NEW: Search state
 
+  bool _isGoogleConnected = false;
+
   @override
   void initState() {
     super.initState();
     _audioRecorder = AudioRecorder();
     _loadInitialData();
+    _checkGoogleConnection();
+  }
+
+  Future<void> _checkGoogleConnection() async {
+    final connected = await GoogleTasksHelper.isConnected();
+    setState(() => _isGoogleConnected = connected);
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isGoogleConnected) {
+      await GoogleTasksHelper.signOut();
+      setState(() => _isGoogleConnected = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Google Tasks Disconnected")),
+        );
+      }
+    } else {
+      final user = await GoogleTasksHelper.signIn();
+      if (user != null) {
+        setState(() => _isGoogleConnected = true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Connected as ${user.displayName}")),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _syncToGoogle(MindTask task) async {
+    if (!_isGoogleConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please connect Google Tasks first")),
+      );
+      return;
+    }
+
+    final success = await GoogleTasksHelper.addTask(
+      task.title,
+      notes: "Type: ${itemTypeToDisplay(task.type)}",
+      priority: task.priority,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(success ? "Synced to Google Tasks!" : "Sync failed."),
+          backgroundColor: success ? Colors.green : Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  String itemTypeToDisplay(String type) {
+    switch (type) {
+      case 'event': return 'Event';
+      case 'note': return 'Note';
+      default: return 'Task';
+    }
   }
 
   // --- APP INITIALIZATION ---
@@ -528,6 +613,14 @@ class _RecordingScreenState extends State<RecordingScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: Icon(
+              Icons.account_circle_rounded,
+              color: _isGoogleConnected ? Colors.blueAccent : Colors.white24,
+            ),
+            tooltip: _isGoogleConnected ? "Google Tasks Connected" : "Connect Google Tasks",
+            onPressed: _handleGoogleSignIn,
+          ),
           if (_parsedTasks.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
@@ -566,162 +659,155 @@ class _RecordingScreenState extends State<RecordingScreen> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
 
-          // SEARCH BAR
+          // SEARCH BAR (shadcn style)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: "Search thoughts or priorities...",
-                hintStyle: const TextStyle(color: Colors.white24),
-                prefixIcon: const Icon(Icons.search_rounded, color: Colors.white24),
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.03),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFF18181B),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                style: const TextStyle(fontSize: 14, color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: "Search thoughts...",
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 14),
+                  prefixIcon: Icon(Icons.search, size: 18, color: Colors.white.withOpacity(0.3)),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
+          // RECORDING ACTION AREA
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildIconButton(Icons.photo_library_rounded, () => _pickImage(ImageSource.gallery)),
-              const SizedBox(width: 20),
-              Center(
-                child: GestureDetector(
-                  onTap: _isProcessing ? null : _toggleRecording,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (_isListening)
-                        TweenAnimationBuilder(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: const Duration(seconds: 1),
-                          onEnd: () => {}, // Handled by repeat
-                          builder: (context, double value, child) {
-                            return Container(
-                              width: 130 + (20 * value),
-                              height: 130 + (20 * value),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.redAccent.withOpacity(1 - value), width: 2),
-                              ),
-                            );
-                          },
+              _buildModernIconButton(Icons.image_outlined, () => _pickImage(ImageSource.gallery)),
+              const SizedBox(width: 24),
+              GestureDetector(
+                onTap: _isProcessing ? null : _toggleRecording,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (_isListening)
+                      _buildPulseEffect(),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      height: _isListening ? 120 : 100,
+                      width: _isListening ? 120 : 100,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: _isProcessing 
+                              ? [const Color(0xFFFACC15), const Color(0xFFEAB308)] // Yellow-400 to 600
+                              : (_isListening 
+                                  ? [const Color(0xFFF43F5E), const Color(0xFFE11D48)] // Rose-500 to 600
+                                  : [const Color(0xFF6366F1), const Color(0xFF4F46E5)]), // Indigo-500 to 600
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        height: _isListening ? 160 : 130,
-                        width: _isListening ? 160 : 130,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: _isProcessing 
-                                ? [Colors.amber, Colors.orange]
-                                : (_isListening 
-                                    ? [Colors.redAccent, Colors.pinkAccent] 
-                                    : [const Color(0xFF6200EE), const Color(0xFF3700B3)]),
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_isListening || _isProcessing)
+                                ? (_isProcessing ? Colors.amber : Colors.roseAccent).withOpacity(0.4)
+                                : const Color(0xFF6366F1).withOpacity(0.3),
+                            blurRadius: 40,
+                            spreadRadius: _isListening ? 10 : 0,
                           ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: (_isListening || _isProcessing)
-                                  ? (_isProcessing ? Colors.amber : Colors.redAccent).withOpacity(0.5)
-                                  : Colors.black45,
-                              blurRadius: 30,
-                              spreadRadius: _isListening ? 10 : 2,
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          _isProcessing ? Icons.sync_rounded : (_isListening ? Icons.stop_rounded : Icons.mic_rounded),
-                          size: 50,
-                          color: Colors.white,
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                      child: Icon(
+                        _isProcessing ? Icons.sync : (_isListening ? Icons.stop : Icons.mic_none),
+                        size: 32,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 20),
-              _buildIconButton(Icons.camera_alt_rounded, () => _pickImage(ImageSource.camera)),
+              const SizedBox(width: 24),
+              _buildModernIconButton(Icons.camera_outlined, () => _pickImage(ImageSource.camera)),
             ],
           ),
 
           const SizedBox(height: 24),
           Text(
-            _isProcessing ? "Sorting Brain..." : (_isListening ? "Listening..." : "Voice or Visual Dump"),
+            _isProcessing ? "Analyzing..." : (_isListening ? "Listening..." : "Voice or Visual Dump"),
             style: TextStyle(
-              color: _isProcessing ? Colors.amber : Colors.white70,
-              fontSize: 16,
-              fontWeight: FontWeight.w300,
-              letterSpacing: 1.2
+              color: _isProcessing ? const Color(0xFFFACC15) : Colors.white.withOpacity(0.5),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
             ),
           ),
+          
           if (_error != null)
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.all(12),
-              color: Colors.redAccent.withOpacity(0.1),
-              child: Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
-            ),
-          const SizedBox(height: 20),
+            _buildErrorContainer(),
 
+          const SizedBox(height: 32),
+
+          // FILTER TABS (Pill style)
           if (_parsedTasks.isNotEmpty) ...[
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: ['All', 'Task', 'Event', 'Note'].map((filter) {
                   final isSelected = _currentFilter == filter;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      selected: isSelected,
-                      label: Text(filter, style: TextStyle(color: isSelected ? Colors.black : Colors.white70)),
-                      selectedColor: Colors.amberAccent,
-                      backgroundColor: Colors.white10,
-                      onSelected: (selected) {
-                        setState(() => _currentFilter = filter);
-                      },
+                    child: InkWell(
+                      onTap: () => setState(() => _currentFilter = filter),
+                      borderRadius: BorderRadius.circular(20),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+                          ),
+                        ),
+                        child: Text(
+                          filter,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.black : Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
           ],
 
-          const Divider(color: Colors.white10, thickness: 1),
+          const Divider(color: Colors.white10, height: 1),
 
           Expanded(
             child: _parsedTasks.isEmpty && !_isProcessing
-              ? const Center(
-                  child: Text(
-                    "Your organized thoughts will appear here", 
-                    style: TextStyle(color: Colors.white24)
-                  )
-                )
+              ? _buildEmptyState()
               : ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 50),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
                   itemCount: _parsedTasks.length,
                   itemBuilder: (context, index) {
                     final item = _parsedTasks[index];
-
-                    // COMBINED FILTER: Category + Search + Priority
                     final bool matchesCategory = _currentFilter == 'All' || item.type.toLowerCase() == _currentFilter.toLowerCase();
-                    final bool matchesSearch = item.title.toLowerCase().contains(_searchQuery) || item.priority.toLowerCase().contains(_searchQuery);
+                    final bool matchesSearch = item.title.toLowerCase().contains(_searchQuery);
 
                     if (matchesCategory && matchesSearch) {
                       return _buildTaskCard(item, index);
@@ -730,7 +816,68 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   },
                 ),
           ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildModernIconButton(IconData icon, VoidCallback onPressed) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF18181B),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+        ),
+        child: Icon(icon, color: Colors.white.withOpacity(0.6), size: 20),
+      ),
+    );
+  }
+
+  Widget _buildPulseEffect() {
+    return TweenAnimationBuilder(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(seconds: 1),
+      builder: (context, double value, child) {
+        return Container(
+          width: 100 + (60 * value),
+          height: 100 + (60 * value),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFF43F5E).withOpacity(1 - value), width: 2),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildErrorContainer() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.only(top: 16),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+      ),
+      child: Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.auto_awesome_outlined, size: 48, color: Colors.white.withOpacity(0.1)),
+          const SizedBox(height: 16),
+          Text(
+            "Your organized thoughts will appear here",
+            style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 14),
+          ),
         ],
       ),
     );
@@ -765,193 +912,197 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
     switch (item.type) {
       case 'event':
-        icon = Icons.calendar_today_rounded;
-        accentColor = Colors.orangeAccent;
+        icon = Icons.calendar_today_outlined;
+        accentColor = const Color(0xFFFB923C); // Orange-400
         break;
       case 'note':
-        icon = Icons.lightbulb_rounded;
-        accentColor = Colors.tealAccent;
+        icon = Icons.sticky_note_2_outlined;
+        accentColor = const Color(0xFF2DD4BF); // Teal-400
         break;
       default:
-        icon = Icons.check_circle_rounded;
-        accentColor = Colors.blueAccent;
+        icon = Icons.check_circle_outline;
+        accentColor = const Color(0xFF818CF8); // Indigo-400
     }
 
     return Dismissible(
       key: Key(item.id),
-      background: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.green.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 20),
-        child: const Icon(Icons.check, color: Colors.green),
-      ),
-      secondaryBackground: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete_outline, color: Colors.redAccent),
-      ),
-      onDismissed: (direction) {
-        final deletedItem = item;
-        final deletedIndex = index;
-        _deleteTask(index);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.grey[900],
-            content: Text('${deletedItem.title} completed', style: const TextStyle(color: Colors.white)),
-            action: SnackBarAction(
-              label: 'UNDO', 
-              textColor: accentColor,
-              onPressed: () => _restoreTask(deletedIndex, deletedItem)
-            ),
-          )
-        );
-      },
+      background: _buildDismissBackground(Alignment.centerLeft, Colors.green),
+      secondaryBackground: _buildDismissBackground(Alignment.centerRight, Colors.redAccent),
+      onDismissed: (direction) => _handleDismiss(item, index, accentColor),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          color: const Color(0xFF09090B),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
         child: Column(
           children: [
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               onLongPress: () => _showEditDialog(context, index),
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: accentColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: accentColor, size: 24),
+                child: Icon(icon, color: accentColor, size: 20),
               ),
-              title: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.title, 
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        letterSpacing: 0.3,
-                      )
-                    ),
-                  ),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: item.priority == 'High' 
-                          ? Colors.redAccent 
-                          : (item.priority == 'Low' ? Colors.blueAccent : Colors.amberAccent),
-                    ),
-                  ),
-                ],
+              title: Text(
+                item.title, 
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: Colors.white,
+                  letterSpacing: -0.2,
+                )
               ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: accentColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        item.type.toUpperCase(), 
-                        style: TextStyle(
-                          fontSize: 10, 
-                          fontWeight: FontWeight.bold,
-                          color: accentColor,
-                          letterSpacing: 0.5,
-                        )
-                      ),
+                    _buildPriorityDot(item.priority),
+                    const SizedBox(width: 8),
+                    Text(
+                      item.type.toUpperCase(), 
+                      style: TextStyle(
+                        fontSize: 10, 
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withOpacity(0.4),
+                        letterSpacing: 0.5,
+                      )
                     ),
-
                     if (item.startTime != null) ...[
                       const SizedBox(width: 12),
-                      const Icon(Icons.access_time, size: 14, color: Colors.white38),
+                      Icon(Icons.access_time, size: 12, color: Colors.white.withOpacity(0.3)),
                       const SizedBox(width: 4),
                       Text(
                         "${item.startTime!.hour}:${item.startTime!.minute.toString().padLeft(2, '0')}",
-                        style: const TextStyle(fontSize: 12, color: Colors.white38, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.3)),
                       ),
                     ],
                   ],
                 ),
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+              trailing: _buildCardActions(item, index),
+            ),
+            if (item.subTasks.isNotEmpty)
+              _buildSubTaskList(item, index),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDismissBackground(Alignment alignment, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: alignment,
+      padding: EdgeInsets.only(
+        left: alignment == Alignment.centerLeft ? 20 : 0,
+        right: alignment == Alignment.centerRight ? 20 : 0,
+      ),
+      child: Icon(
+        alignment == Alignment.centerLeft ? Icons.check : Icons.delete_outline,
+        color: color,
+      ),
+    );
+  }
+
+  void _handleDismiss(MindTask item, int index, Color accentColor) {
+    final deletedItem = item;
+    final deletedIndex = index;
+    _deleteTask(index);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: const Color(0xFF18181B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        content: Text('${deletedItem.title} handled', style: const TextStyle(color: Colors.white, fontSize: 13)),
+        action: SnackBarAction(
+          label: 'UNDO', 
+          textColor: accentColor,
+          onPressed: () => _restoreTask(deletedIndex, deletedItem)
+        ),
+      )
+    );
+  }
+
+  Widget _buildPriorityDot(String priority) {
+    Color color;
+    switch (priority) {
+      case 'High': color = const Color(0xFFF43F5E); break; // Rose-500
+      case 'Low': color = const Color(0xFF38BDF8); break; // Sky-400
+      default: color = const Color(0xFFFACC15); // Yellow-400
+    }
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+
+  Widget _buildCardActions(MindTask item, int index) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_isGoogleConnected && item.type != 'event')
+          IconButton(
+            icon: Icon(Icons.sync, color: Colors.white.withOpacity(0.2), size: 18),
+            onPressed: () => _syncToGoogle(item),
+          ),
+        if (item.subTasks.isEmpty && item.type != 'event')
+          IconButton(
+            icon: Icon(Icons.auto_awesome_mosaic_outlined, color: Colors.white.withOpacity(0.2), size: 18),
+            onPressed: () => _chunkTask(index),
+          ),
+        if (item.type == 'event')
+          IconButton(
+            icon: Icon(Icons.calendar_add_on_outlined, color: Colors.white.withOpacity(0.2), size: 18),
+            onPressed: () => _addToCalendar(item),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSubTaskList(MindTask item, int taskIndex) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(52, 0, 16, 16),
+      child: Column(
+        children: item.subTasks.asMap().entries.map((entry) {
+          final bool isDone = entry.value.startsWith('✓ ');
+          return InkWell(
+            onTap: () => _toggleSubTask(taskIndex, entry.key),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
                 children: [
-                  if (item.subTasks.isEmpty && item.type != 'event')
-                    IconButton(
-                      icon: const Icon(Icons.auto_fix_high_rounded, color: Colors.white24, size: 20),
-                      onPressed: () => _chunkTask(index),
+                  Icon(
+                    isDone ? Icons.check_circle : Icons.circle_outlined,
+                    size: 14,
+                    color: isDone ? const Color(0xFF2DD4BF) : Colors.white.withOpacity(0.2),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      isDone ? entry.value.replaceFirst('✓ ', '') : entry.value,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDone ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.7),
+                        decoration: isDone ? TextDecoration.lineThrough : null,
+                      ),
                     ),
-                  if (item.type == 'event')
-                    IconButton(
-                      icon: const Icon(Icons.calendar_month_rounded, color: Colors.amber, size: 20),
-                      onPressed: () => _addToCalendar(item),
-                    ),
+                  ),
                 ],
               ),
             ),
-            if (item.subTasks.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(60, 0, 20, 16),
-                child: Column(
-                  children: item.subTasks.asMap().entries.map((entry) {
-                    final bool isDone = entry.value.startsWith('✓ ');
-                    return InkWell(
-                      onTap: () => _toggleSubTask(index, entry.key),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isDone ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                              size: 18,
-                              color: isDone ? Colors.greenAccent : Colors.white24,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                isDone ? entry.value.replaceFirst('✓ ', '') : entry.value,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: isDone ? Colors.white38 : Colors.white70,
-                                  decoration: isDone ? TextDecoration.lineThrough : null,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-          ],
-        ),
+          );
+        }).toList(),
       ),
     );
   }
