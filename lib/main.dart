@@ -419,7 +419,7 @@ class _WrappedScreenState extends State<WrappedScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(value, style: const TextStyle(fontSize: 36, fontWeight: FontWeight.black, color: Colors.white)),
+              Text(value, style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.white)),
               Text(label, style: const TextStyle(fontSize: 14, color: Colors.white54)),
             ],
           ),
