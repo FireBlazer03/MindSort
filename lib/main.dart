@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:record/record.dart';
@@ -1036,18 +1037,19 @@ class _RecordingScreenState extends State<RecordingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
+      extendBody: true,
       appBar: AppBar(
-        toolbarHeight: 90, // Slightly more room
+        toolbarHeight: 90,
         title: Text(
           "MindSort",
           style: GoogleFonts.syne(
             fontWeight: FontWeight.w900,
-            fontSize: 24, // Smaller as requested
+            fontSize: 24,
             letterSpacing: -1.0,
             height: 1.0,
           ),
         ),
-        centerTitle: false, // Give title more room to the left
+        centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
@@ -1088,226 +1090,255 @@ class _RecordingScreenState extends State<RecordingScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 8),
-                  
-                  // STATS COUNTER
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
+      body: GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    
+                    // BENTO STATS GRID
+                    Row(
                       children: [
-                        _buildStatChip("Done", _completedCount.toString(), const Color(0xFF2DD4BF)),
+                        _buildBentoStat("Mind Done", _completedCount.toString(), const Color(0xFF2DD4BF), Icons.verified_rounded),
                         const SizedBox(width: 12),
-                        _buildStatChip("Pending", _parsedTasks.length.toString(), const Color(0xFF6366F1)),
+                        _buildBentoStat("In Mind", _parsedTasks.length.toString(), themeManager.themeData.colorScheme.primary, Icons.bubble_chart_rounded),
                       ],
                     ),
-                  ),
 
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
-                  // SEARCH BAR (shadcn style)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Container(
-                      height: 48,
+                    // PREMIUM SEARCH BAR
+                    Container(
+                      height: 56,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF18181B),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.08)),
+                        color: themeManager.themeData.cardTheme.color,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withOpacity(0.05)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
                       child: TextField(
                         controller: _searchController,
+                        onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
                         onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-                        style: const TextStyle(fontSize: 14, color: Colors.white),
+                        style: const TextStyle(fontSize: 15, color: Colors.white, fontWeight: FontWeight.w500),
                         decoration: InputDecoration(
-                          hintText: "Search thoughts...",
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 14),
-                          prefixIcon: Icon(Icons.search, size: 18, color: Colors.white.withOpacity(0.2)),
+                          hintText: "Search your mind...",
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.15), fontSize: 15, fontWeight: FontWeight.w400),
+                          prefixIcon: Icon(Icons.search_rounded, size: 20, color: Colors.white.withOpacity(0.2)),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 18),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
-                  // RECORDING ACTION AREA
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildModernIconButton(Icons.image_outlined, () => _pickImage(ImageSource.gallery)),
-                      const SizedBox(width: 24),
-                      GestureDetector(
-                        onTap: _isProcessing ? null : _toggleRecording,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            if (_isListening)
-                              _buildPulseEffect(),
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 400),
-                              height: _isListening ? 120 : 100,
-                              width: _isListening ? 120 : 100,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: _isProcessing 
-                                      ? [const Color(0xFFFACC15), const Color(0xFFEAB308)] // Yellow-400 to 600
-                                      : (_isListening 
-                                          ? [const Color(0xFFF43F5E), const Color(0xFFE11D48)] // Rose-500 to 600
-                                          : [const Color(0xFF6366F1), const Color(0xFF4F46E5)]), // Indigo-500 to 600
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                    // GLASSMORPHIC ACTION ISLAND
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(32),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.03),
+                            borderRadius: BorderRadius.circular(32),
+                            border: Border.all(color: Colors.white.withOpacity(0.08)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildIslandButton(Icons.image_rounded, () => _pickImage(ImageSource.gallery)),
+                              const SizedBox(width: 12),
+                              GestureDetector(
+                                onTap: _isProcessing ? null : _toggleRecording,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    if (_isListening) _buildPulseEffect(),
+                                    AnimatedContainer(
+                                      duration: const Duration(milliseconds: 400),
+                                      height: 72,
+                                      width: 72,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: _isProcessing 
+                                              ? [const Color(0xFFFACC15), const Color(0xFFEAB308)]
+                                              : (_isListening 
+                                                  ? [const Color(0xFFF43F5E), const Color(0xFFE11D48)]
+                                                  : [themeManager.themeData.colorScheme.primary, themeManager.themeData.colorScheme.primary.withBlue(255)]),
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: (_isListening || _isProcessing)
+                                                ? (_isProcessing ? Colors.amber : Colors.pinkAccent).withOpacity(0.5)
+                                                : themeManager.themeData.colorScheme.primary.withOpacity(0.3),
+                                            blurRadius: 20,
+                                            spreadRadius: 2,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        _isProcessing ? Icons.sync_rounded : (_isListening ? Icons.stop_rounded : Icons.mic_rounded),
+                                        size: 28,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (_isListening || _isProcessing)
-                                        ? (_isProcessing ? Colors.amber : Colors.pinkAccent).withOpacity(0.4)
-                                        : const Color(0xFF6366F1).withOpacity(0.3),
-                                    blurRadius: 40,
-                                    spreadRadius: _isListening ? 10 : 0,
-                                  ),
-                                ],
                               ),
-                              child: Icon(
-                                _isProcessing ? Icons.sync : (_isListening ? Icons.stop : Icons.mic_none),
-                                size: 32,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              _buildIslandButton(Icons.camera_alt_rounded, () => _pickImage(ImageSource.camera)),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 24),
-                      _buildModernIconButton(Icons.camera_outlined, () => _pickImage(ImageSource.camera)),
+                    ),
+
+                    const SizedBox(height: 20),
+                    Text(
+                      _isProcessing ? "SYNCHRONIZING..." : (_isListening ? "RECORDING..." : "VOICE OR VISUAL DUMP"),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: _isProcessing ? const Color(0xFFFACC15) : Colors.white.withOpacity(0.3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    
+                    if (_error != null) _buildErrorContainer(),
+
+                    const SizedBox(height: 40),
+
+                    // FILTER TABS (Premium segmented style)
+                    if (_parsedTasks.isNotEmpty) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text("FILTERS", style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white.withOpacity(0.2), letterSpacing: 1)),
+                      ),
+                      const SizedBox(height: 12),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: ['All', 'Task', 'Event', 'Note'].map((filter) {
+                            final isSelected = _currentFilter == filter;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: InkWell(
+                                onTap: () => setState(() => _currentFilter = filter),
+                                borderRadius: BorderRadius.circular(12),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? Colors.white : Colors.white.withOpacity(0.03),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.05),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    filter,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: isSelected ? Colors.black : Colors.white.withOpacity(0.4),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                     ],
-                  ),
-
-                  const SizedBox(height: 24),
-                  Text(
-                    _isProcessing ? "Analyzing..." : (_isListening ? "Listening..." : "Voice or Visual Dump"),
-                    style: TextStyle(
-                      color: _isProcessing ? const Color(0xFFFACC15) : Colors.white.withOpacity(0.5),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  
-                  if (_error != null)
-                    _buildErrorContainer(),
-
-                  const SizedBox(height: 32),
-
-                  // FILTER TABS (Pill style)
-                  if (_parsedTasks.isNotEmpty) ...[
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        children: ['All', 'Task', 'Event', 'Note'].map((filter) {
-                          final isSelected = _currentFilter == filter;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: InkWell(
-                              onTap: () => setState(() => _currentFilter = filter),
-                              borderRadius: BorderRadius.circular(20),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-                                  ),
-                                ),
-                                child: Text(
-                                  filter,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: isSelected ? Colors.black : Colors.white.withOpacity(0.6),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                   ],
-                ],
+                ),
               ),
             ),
-          ),
 
-          const Divider(color: Colors.white10, height: 1),
+            const Divider(color: Colors.white10, height: 1),
 
-          Expanded(
-            child: _parsedTasks.isEmpty && !_isProcessing
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                  itemCount: _parsedTasks.length,
-                  itemBuilder: (context, index) {
-                    final item = _parsedTasks[index];
-                    final bool matchesCategory = _currentFilter == 'All' || item.type.toLowerCase() == _currentFilter.toLowerCase();
-                    final bool matchesSearch = item.title.toLowerCase().contains(_searchQuery);
+            Expanded(
+              child: _parsedTasks.isEmpty && !_isProcessing
+                ? _buildEmptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _parsedTasks.length,
+                    itemBuilder: (context, index) {
+                      final item = _parsedTasks[index];
+                      final bool matchesCategory = _currentFilter == 'All' || item.type.toLowerCase() == _currentFilter.toLowerCase();
+                      final bool matchesSearch = item.title.toLowerCase().contains(_searchQuery);
 
-                    if (matchesCategory && matchesSearch) {
-                      return _buildTaskCard(item, index);
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-          ),
-        ],
+                      if (matchesCategory && matchesSearch) {
+                        return FadeInUp(
+                          duration: const Duration(milliseconds: 400),
+                          delay: Duration(milliseconds: index * 50),
+                          child: _buildTaskCard(item, index),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatChip(String label, String value, Color color) {
+  Widget _buildBentoStat(String label, String value, Color color, IconData icon) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: color.withOpacity(0.15), width: 1.5),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon, color: color, size: 20),
+                Text(
+                  value,
+                  style: GoogleFonts.syne(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 8),
             Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
+              label.toUpperCase(),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
                 color: color.withOpacity(0.6),
-                letterSpacing: 0.5,
+                letterSpacing: 1,
               ),
             ),
           ],
@@ -1316,18 +1347,17 @@ class _RecordingScreenState extends State<RecordingScreen> {
     );
   }
 
-  Widget _buildModernIconButton(IconData icon, VoidCallback onPressed) {
+  Widget _buildIslandButton(IconData icon, VoidCallback onPressed) {
     return InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF18181B),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: Colors.white.withOpacity(0.05),
+          shape: BoxShape.circle,
         ),
-        child: Icon(icon, color: Colors.white.withOpacity(0.6), size: 20),
+        child: Icon(icon, color: Colors.white.withOpacity(0.7), size: 22),
       ),
     );
   }
@@ -1338,8 +1368,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
       duration: const Duration(seconds: 1),
       builder: (context, double value, child) {
         return Container(
-          width: 100 + (60 * value),
-          height: 100 + (60 * value),
+          width: 72 + (40 * value),
+          height: 72 + (40 * value),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFFF43F5E).withOpacity(1 - value), width: 2),
@@ -1350,30 +1380,63 @@ class _RecordingScreenState extends State<RecordingScreen> {
   }
 
   Widget _buildErrorContainer() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      margin: const EdgeInsets.only(top: 16),
-      decoration: BoxDecoration(
-        color: Colors.redAccent.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+    return FadeIn(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.only(top: 20),
+        decoration: BoxDecoration(
+          color: Colors.redAccent.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 18),
+            const SizedBox(width: 12),
+            Expanded(child: Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w500))),
+          ],
+        ),
       ),
-      child: Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.auto_awesome_outlined, size: 48, color: Colors.white.withOpacity(0.1)),
-          const SizedBox(height: 16),
-          Text(
-            "Your organized thoughts will appear here",
-            style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 14),
-          ),
-        ],
+      child: FadeIn(
+        duration: const Duration(seconds: 1),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.02),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
+              ),
+              child: Icon(Icons.auto_awesome_rounded, size: 64, color: Colors.white.withOpacity(0.05)),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              "YOUR MIND IS CLEAR",
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white.withOpacity(0.2),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Dump your thoughts to get started",
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white.withOpacity(0.1),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1407,16 +1470,16 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
     switch (item.type) {
       case 'event':
-        icon = Icons.calendar_today_outlined;
-        accentColor = const Color(0xFFFB923C); // Orange-400
+        icon = Icons.calendar_today_rounded;
+        accentColor = const Color(0xFFFB923C);
         break;
       case 'note':
-        icon = Icons.sticky_note_2_outlined;
-        accentColor = const Color(0xFF2DD4BF); // Teal-400
+        icon = Icons.sticky_note_2_rounded;
+        accentColor = const Color(0xFF2DD4BF);
         break;
       default:
-        icon = Icons.check_circle_outline;
-        accentColor = const Color(0xFF818CF8); // Indigo-400
+        icon = Icons.task_alt_rounded;
+        accentColor = themeManager.themeData.colorScheme.primary;
     }
 
     return Dismissible(
@@ -1425,58 +1488,70 @@ class _RecordingScreenState extends State<RecordingScreen> {
       secondaryBackground: _buildDismissBackground(Alignment.centerRight, Colors.redAccent),
       onDismissed: (direction) => _handleDismiss(item, index, accentColor),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFF09090B),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: themeManager.themeData.cardTheme.color,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           children: [
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              contentPadding: const EdgeInsets.all(16),
               onLongPress: () => _showEditDialog(context, index),
               leading: Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: accentColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: accentColor, size: 20),
+                child: Icon(icon, color: accentColor, size: 24),
               ),
               title: Text(
                 item.title, 
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
                   color: Colors.white,
-                  letterSpacing: -0.2,
+                  letterSpacing: -0.3,
                 )
               ),
               subtitle: Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Row(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
                   children: [
-                    _buildPriorityDot(item.priority),
-                    const SizedBox(width: 8),
-                    Text(
-                      item.type.toUpperCase(), 
-                      style: TextStyle(
-                        fontSize: 10, 
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white.withOpacity(0.4),
-                        letterSpacing: 0.5,
-                      )
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildPriorityDot(item.priority),
+                        const SizedBox(width: 6),
+                        Text(
+                          item.priority.toUpperCase(),
+                          style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white.withOpacity(0.3)),
+                        ),
+                      ],
                     ),
-                    if (item.startTime != null) ...[
-                      const SizedBox(width: 12),
-                      Icon(Icons.calendar_month_outlined, size: 12, color: Colors.white.withOpacity(0.3)),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${item.startTime!.day}/${item.startTime!.month} ${item.startTime!.hour}:${item.startTime!.minute.toString().padLeft(2, '0')}",
-                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.3)),
+                    if (item.startTime != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.access_time_filled_rounded, size: 14, color: Colors.white.withOpacity(0.2)),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${item.startTime!.day}/${item.startTime!.month} ${item.startTime!.hour}:${item.startTime!.minute.toString().padLeft(2, '0')}",
+                            style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.3)),
+                          ),
+                        ],
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -1492,19 +1567,17 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   Widget _buildDismissBackground(Alignment alignment, Color color) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
       ),
       alignment: alignment,
-      padding: EdgeInsets.only(
-        left: alignment == Alignment.centerLeft ? 20 : 0,
-        right: alignment == Alignment.centerRight ? 20 : 0,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 24),
       child: Icon(
-        alignment == Alignment.centerLeft ? Icons.check : Icons.delete_outline,
+        alignment == Alignment.centerLeft ? Icons.check_circle_rounded : Icons.delete_rounded,
         color: color,
+        size: 28,
       ),
     );
   }
@@ -1513,16 +1586,17 @@ class _RecordingScreenState extends State<RecordingScreen> {
     final deletedItem = item;
     final deletedIndex = index;
     _deleteTask(index);
-    _incrementCompletedCount(); // Satisfaction!
+    _incrementCompletedCount();
 
-    ScaffoldMessenger.of(context).clearSnackBars(); // Ensure old ones are gone
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        duration: const Duration(seconds: 2), // Fix: Dismiss after 2s
+        duration: const Duration(seconds: 3),
         backgroundColor: const Color(0xFF18181B),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        content: Text('${deletedItem.title} handled', style: const TextStyle(color: Colors.white, fontSize: 13)),
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 110),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Text('${deletedItem.title} handled', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
         action: SnackBarAction(
           label: 'UNDO', 
           textColor: accentColor,
@@ -1538,14 +1612,18 @@ class _RecordingScreenState extends State<RecordingScreen> {
   Widget _buildPriorityDot(String priority) {
     Color color;
     switch (priority) {
-      case 'High': color = const Color(0xFFF43F5E); break; // Rose-500
-      case 'Low': color = const Color(0xFF38BDF8); break; // Sky-400
-      default: color = const Color(0xFFFACC15); // Yellow-400
+      case 'High': color = const Color(0xFFF43F5E); break;
+      case 'Low': color = const Color(0xFF38BDF8); break;
+      default: color = const Color(0xFFFACC15);
     }
     return Container(
-      width: 6,
-      height: 6,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle, 
+        color: color,
+        boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 4, spreadRadius: 1)],
+      ),
     );
   }
 
@@ -1553,53 +1631,53 @@ class _RecordingScreenState extends State<RecordingScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          icon: Icon(Icons.edit_note_rounded, color: Colors.white.withOpacity(0.3), size: 20),
-          onPressed: () => _showEditDialog(context, index),
-        ),
+        _buildActionIconButton(Icons.edit_note_rounded, () => _showEditDialog(context, index)),
         if (_isGoogleConnected && item.type != 'event')
-          IconButton(
-            icon: Icon(Icons.sync, color: Colors.white.withOpacity(0.2), size: 18),
-            onPressed: () => _syncToGoogle(item),
-          ),
+          _buildActionIconButton(Icons.sync_rounded, () => _syncToGoogle(item)),
         if (item.subTasks.isEmpty && item.type != 'event')
-          IconButton(
-            icon: Icon(Icons.auto_awesome_mosaic_outlined, color: Colors.white.withOpacity(0.2), size: 18),
-            onPressed: () => _chunkTask(index),
-          ),
+          _buildActionIconButton(Icons.auto_awesome_mosaic_rounded, () => _chunkTask(index)),
         if (item.type == 'event')
-          IconButton(
-            icon: Icon(Icons.event_available_outlined, color: Colors.white.withOpacity(0.2), size: 18),
-            onPressed: () => _addToCalendar(item),
-          ),
+          _buildActionIconButton(Icons.event_available_rounded, () => _addToCalendar(item)),
       ],
     );
   }
 
+  Widget _buildActionIconButton(IconData icon, VoidCallback onPressed) {
+    return IconButton(
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      icon: Icon(icon, color: Colors.white.withOpacity(0.2), size: 22),
+      onPressed: onPressed,
+      splashRadius: 20,
+    );
+  }
+
   Widget _buildSubTaskList(MindTask item, int taskIndex) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(52, 0, 16, 16),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(68, 0, 20, 20),
       child: Column(
         children: item.subTasks.asMap().entries.map((entry) {
           final bool isDone = entry.value.startsWith('✓ ');
           return InkWell(
             onTap: () => _toggleSubTask(taskIndex, entry.key),
+            borderRadius: BorderRadius.circular(8),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
                   Icon(
-                    isDone ? Icons.check_circle : Icons.circle_outlined,
-                    size: 14,
-                    color: isDone ? const Color(0xFF2DD4BF) : Colors.white.withOpacity(0.2),
+                    isDone ? Icons.check_circle_rounded : Icons.circle_outlined,
+                    size: 16,
+                    color: isDone ? const Color(0xFF2DD4BF) : Colors.white.withOpacity(0.1),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       isDone ? entry.value.replaceFirst('✓ ', '') : entry.value,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDone ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.7),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: isDone ? Colors.white.withOpacity(0.2) : Colors.white.withOpacity(0.6),
                         decoration: isDone ? TextDecoration.lineThrough : null,
                       ),
                     ),
