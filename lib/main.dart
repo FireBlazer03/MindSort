@@ -921,10 +921,16 @@ class _RecordingScreenState extends State<RecordingScreen> {
   }
 
   void _deleteTask(int index) {
+    final task = _parsedTasks[index];
     setState(() {
       _parsedTasks.removeAt(index);
     });
     _saveTasks();
+    try {
+      _firestore.collection('tasks').doc(task.id).delete();
+    } catch (e) {
+      debugPrint("Firestore delete failed: $e");
+    }
   }
 
   void _restoreTask(int index, MindTask task) {
@@ -1223,13 +1229,14 @@ class _RecordingScreenState extends State<RecordingScreen> {
                     childCount: 3,
                   ),
                 ),
-              )
-            else if (_parsedTasks.isEmpty)
+              ),
+
+            if (_parsedTasks.isEmpty && !_isProcessing)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: _buildEmptyState(),
               )
-            else
+            else if (_parsedTasks.isNotEmpty)
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 140),
                 sliver: SliverList(
