@@ -865,29 +865,27 @@ class _RecordingScreenState extends State<RecordingScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        toolbarHeight: 80,
+        toolbarHeight: 90, // Slightly more room
         title: Text(
           "MindSort",
           style: GoogleFonts.syne(
-            fontWeight: FontWeight.w800,
-            fontSize: 28,
-            letterSpacing: -1,
-            height: 1.2,
+            fontWeight: FontWeight.w900,
+            fontSize: 32,
+            letterSpacing: -1.5,
+            height: 1.0, // Tighter height to prevent top/bottom clipping
           ),
         ),
-        centerTitle: true,
+        centerTitle: false, // Give title more room to the left
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: PopupMenuButton<MindTheme>(
-          icon: const Icon(Icons.palette_outlined),
-          onSelected: (theme) => themeManager.setTheme(theme),
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: MindTheme.zinc, child: Text("Zinc (Default)")),
-            const PopupMenuItem(value: MindTheme.cyberpunk, child: Text("Cyberpunk")),
-            const PopupMenuItem(value: MindTheme.paper, child: Text("Paper")),
-          ],
-        ),
         actions: [
+          IconButton(
+            icon: Icon(
+              Icons.account_circle_rounded,
+              color: _isGoogleConnected ? Colors.blueAccent : Colors.white24,
+            ),
+            onPressed: _handleGoogleSignIn,
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
@@ -898,23 +896,23 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   builder: (_) => WrappedScreen(tasks: _parsedTasks, completedCount: _completedCount)
                 ));
               }
+              if (value == 'zinc') themeManager.setTheme(MindTheme.zinc);
+              if (value == 'cyberpunk') themeManager.setTheme(MindTheme.cyberpunk);
+              if (value == 'paper') themeManager.setTheme(MindTheme.paper);
+              if (value == 'api') _showApiKeyPopup();
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'wrapped', child: Text("View Wrapped")),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'zinc', child: Text("Theme: Zinc")),
+              const PopupMenuItem(value: 'cyberpunk', child: Text("Theme: Cyberpunk")),
+              const PopupMenuItem(value: 'paper', child: Text("Theme: Paper")),
+              const PopupMenuDivider(),
               const PopupMenuItem(value: 'pdf', child: Text("Export PDF")),
               const PopupMenuItem(value: 'csv', child: Text("Export CSV")),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'api', child: Text("Change API Key")),
             ],
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.account_circle_rounded,
-              color: _isGoogleConnected ? Colors.blueAccent : Colors.white24,
-            ),
-            onPressed: _handleGoogleSignIn,
-          ),
-          IconButton(
-            icon: const Icon(Icons.vpn_key_rounded, color: Colors.white24),
-            onPressed: () => _showApiKeyPopup(),
           ),
         ],
       ),
