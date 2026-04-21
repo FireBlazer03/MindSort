@@ -63,14 +63,6 @@ class MindTask {
   }
 }
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const MindSortApp());
-}
-
 // --- THEME SYSTEM ---
 enum MindTheme { zinc, cyberpunk, paper }
 
