@@ -1588,6 +1588,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
         key: Key(item.id),
         endActionPane: ActionPane(
           motion: const StretchMotion(),
+          dismissible: DismissiblePane(onDismissed: () => _handleDismiss(item, index, accentColor)),
           children: [
             SlidableAction(
               onPressed: (context) => _handleDismiss(item, index, accentColor),
@@ -1677,7 +1678,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 2),
         backgroundColor: const Color(0xFF18181B),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 110),
@@ -1690,6 +1691,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
             HapticFeedback.mediumImpact();
             _restoreTask(deletedIndex, deletedItem);
             _decrementCompletedCount();
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
           }
         ),
       )
