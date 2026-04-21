@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:record/record.dart';
@@ -10,6 +11,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:csv/csv.dart';
+import 'package:intl/intl.dart';
+
 import 'firebase_options.dart';
 import 'gemini_helper.dart';
 import 'platform_utils.dart';
@@ -62,38 +71,214 @@ void main() async {
   runApp(const MindSortApp());
 }
 
-class MindSortApp extends StatelessWidget {
+// --- THEME SYSTEM ---
+enum MindTheme { zinc, cyberpunk, paper }
+
+class ThemeManager extends ChangeNotifier {
+  MindTheme _currentTheme = MindTheme.zinc;
+  MindTheme get currentTheme => _currentTheme;
+
+  void setTheme(MindTheme theme) {
+    _currentTheme = theme;
+    notifyListeners();
+  }
+
+  ThemeData get themeData {
+    switch (_currentTheme) {
+      case MindTheme.cyberpunk:
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.cyanAccent,
+            brightness: Brightness.dark,
+            surface: const Color(0xFF0D0221),
+            background: const Color(0xFF0D0221),
+          ),
+          textTheme: GoogleFonts.orbitronTextTheme(ThemeData.dark().textTheme),
+          cardTheme: CardThemeData(
+            color: const Color(0xFF1B065E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+              side: const BorderSide(color: Colors.cyanAccent, width: 0.5),
+            ),
+          ),
+        );
+      case MindTheme.paper:
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.light,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.brown,
+            brightness: Brightness.light,
+            surface: const Color(0xFFF5F5DC),
+            background: const Color(0xFFF5F5DC),
+          ),
+          textTheme: GoogleFonts.specialEliteTextTheme(ThemeData.light().textTheme),
+          cardTheme: CardThemeData(
+            color: const Color(0xFFFFF8E1),
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(0),
+              side: const BorderSide(color: Colors.brown, width: 0.2),
+            ),
+          ),
+        );
+      default:
+        return ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF6366F1),
+            brightness: Brightness.dark,
+            surface: const Color(0xFF09090B),
+            background: const Color(0xFF09090B),
+          ),
+          textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+          cardTheme: CardThemeData(
+            color: const Color(0xFF18181B),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.white.withOpacity(0.08)),
+            ),
+          ),
+        );
+    }
+  }
+}
+
+final themeManager = ThemeManager();
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MindSortApp());
+}
+
+class MindSortApp extends StatefulWidget {
   const MindSortApp({super.key});
+
+  @override
+  State<MindSortApp> createState() => _MindSortAppState();
+}
+
+class _MindSortAppState extends State<MindSortApp> {
+  @override
+  void initState() {
+    super.initState();
+    themeManager.addListener(() => setState(() {}));
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'MindSort',
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1), // Indigo
-          brightness: Brightness.dark,
-          surface: const Color(0xFF09090B), // Zinc-950
-          background: const Color(0xFF09090B),
-        ),
-        scaffoldBackgroundColor: const Color(0xFF09090B),
-        cardTheme: CardThemeData(
-          color: const Color(0xFF18181B), // Zinc-900
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.white.withOpacity(0.08)),
+      theme: themeManager.themeData,
+      home: const RecordingScreen(),
+    );
+  }
+}
+
+// --- INTERACTIVE RECAP SCREEN ---
+class WrappedScreen extends StatelessWidget {
+  final List<MindTask> tasks;
+  final int completedCount;
+
+  const WrappedScreen({super.key, required this.tasks, required this.completedCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final taskCount = tasks.where((t) => t.type == 'task').length;
+    final eventCount = tasks.where((t) => t.type == 'event').length;
+    final noteCount = tasks.where((t) => t.type == 'note').length;
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
-        textTheme: const TextTheme(
-          titleLarge: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.5),
-          bodyMedium: TextStyle(color: Color(0xFFA1A1AA)), // Zinc-400
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              FadeInDown(
+                child: const Text(
+                  "YOUR MINDSORT\nWRAPPED",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.black, height: 1),
+                ),
+              ),
+              const SizedBox(height: 40),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: FadeInUp(
+                    delay: const Duration(milliseconds: 500),
+                    child: PieChart(
+                      PieChartData(
+                        sections: [
+                          PieChartSectionData(value: taskCount.toDouble(), title: 'Tasks', color: Colors.indigoAccent, radius: 100),
+                          PieChartSectionData(value: eventCount.toDouble(), title: 'Events', color: Colors.orangeAccent, radius: 100),
+                          PieChartSectionData(value: noteCount.toDouble(), title: 'Notes', color: Colors.tealAccent, radius: 100),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              FadeIn(
+                delay: const Duration(seconds: 1),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Column(
+                    children: [
+                      _buildWrappedStat("Thoughts Captured", (tasks.length + completedCount).toString()),
+                      _buildWrappedStat("Insights Processed", completedCount.toString()),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 56),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Keep Sorting"),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      home: const RecordingScreen(),
+    );
+  }
+
+  Widget _buildWrappedStat(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 16, opacity: 0.7)),
+          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        ],
+      ),
     );
   }
 }
@@ -107,16 +292,17 @@ class RecordingScreen extends StatefulWidget {
 
 class _RecordingScreenState extends State<RecordingScreen> {
   late final AudioRecorder _audioRecorder;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   bool _isListening = false;
   bool _isProcessing = false;
   List<MindTask> _parsedTasks = []; 
-  int _completedCount = 0; // NEW
+  int _completedCount = 0;
   String? _error;
-  String _currentFilter = 'All'; // NEW: Filter state
-  String? _userApiKey; // NEW: User API Key
-  final TextEditingController _searchController = TextEditingController(); // NEW: Search
-  String _searchQuery = ""; // NEW: Search state
+  String _currentFilter = 'All';
+  String? _userApiKey;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
 
   bool _isGoogleConnected = false;
 
@@ -126,6 +312,38 @@ class _RecordingScreenState extends State<RecordingScreen> {
     _audioRecorder = AudioRecorder();
     _loadInitialData();
     _checkGoogleConnection();
+  }
+
+  // --- EXPORT LOGIC ---
+  Future<void> _exportToCSV() async {
+    List<List<dynamic>> rows = [
+      ["Title", "Type", "Priority", "Start Time"]
+    ];
+    for (var task in _parsedTasks) {
+      rows.add([task.title, task.type, task.priority, task.startTime?.toString() ?? ""]);
+    }
+    String csv = const ListToCsvConverter().convert(rows);
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/mindsort_tasks.csv');
+    await file.writeAsString(csv);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Exported to ${file.path}")));
+  }
+
+  Future<void> _exportToPDF() async {
+    final pdf = pw.Document();
+    pdf.addPage(pw.Page(
+      build: (pw.Context context) => pw.Column(
+        children: [
+          pw.Text("MindSort Task Export", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 20),
+          ..._parsedTasks.map((t) => pw.Bullet(text: "${t.title} (${t.type}) - ${t.priority}")),
+        ],
+      ),
+    ));
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File('${directory.path}/mindsort_tasks.pdf');
+    await file.writeAsBytes(await pdf.save());
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("PDF Exported to ${file.path}")));
   }
 
   Future<void> _checkGoogleConnection() async {
@@ -225,6 +443,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   // --- STORAGE LOGIC ---
   Future<void> _loadTasks() async {
+    // Load local first for speed
     final prefs = await SharedPreferences.getInstance();
     final String? tasksString = prefs.getString('saved_tasks');
     
@@ -233,6 +452,19 @@ class _RecordingScreenState extends State<RecordingScreen> {
       setState(() {
         _parsedTasks = decoded.map((item) => MindTask.fromJson(item)).toList();
       });
+    }
+
+    // Then sync from Firestore if available
+    try {
+      final snapshot = await _firestore.collection('tasks').orderBy('id', descending: true).get();
+      final cloudTasks = snapshot.docs.map((doc) => MindTask.fromJson(doc.data())).toList();
+      if (cloudTasks.isNotEmpty) {
+        setState(() {
+          _parsedTasks = cloudTasks;
+        });
+      }
+    } catch (e) {
+      debugPrint("Firestore load failed: $e");
     }
   }
 
@@ -316,6 +548,15 @@ class _RecordingScreenState extends State<RecordingScreen> {
     final prefs = await SharedPreferences.getInstance();
     final String encoded = jsonEncode(_parsedTasks.map((t) => t.toJson()).toList());
     await prefs.setString('saved_tasks', encoded);
+
+    // Sync to Firestore
+    try {
+      for (var task in _parsedTasks) {
+        await _firestore.collection('tasks').doc(task.id).set(task.toJson());
+      }
+    } catch (e) {
+      debugPrint("Firestore save failed: $e");
+    }
   }
 
   @override
@@ -634,33 +875,51 @@ class _RecordingScreenState extends State<RecordingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "MindSort",
-          style: TextStyle(
-            fontFamily: 'serif',
-            fontStyle: FontStyle.italic,
-            fontWeight: FontWeight.w600,
-            fontSize: 26,
-            letterSpacing: -0.5,
+          style: GoogleFonts.syne(
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+            letterSpacing: -1,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: PopupMenuButton<MindTheme>(
+          icon: const Icon(Icons.palette_outlined),
+          onSelected: (theme) => themeManager.setTheme(theme),
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: MindTheme.zinc, child: Text("Zinc (Default)")),
+            const PopupMenuItem(value: MindTheme.cyberpunk, child: Text("Cyberpunk")),
+            const PopupMenuItem(value: MindTheme.paper, child: Text("Paper")),
+          ],
+        ),
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) {
+              if (value == 'pdf') _exportToPDF();
+              if (value == 'csv') _exportToCSV();
+              if (value == 'wrapped') {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => WrappedScreen(tasks: _parsedTasks, completedCount: _completedCount)
+                ));
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'wrapped', child: Text("View Wrapped")),
+              const PopupMenuItem(value: 'pdf', child: Text("Export PDF")),
+              const PopupMenuItem(value: 'csv', child: Text("Export CSV")),
+            ],
+          ),
           IconButton(
             icon: Icon(
               Icons.account_circle_rounded,
               color: _isGoogleConnected ? Colors.blueAccent : Colors.white24,
             ),
-            tooltip: _isGoogleConnected ? "Google Tasks Connected" : "Connect Google Tasks",
             onPressed: _handleGoogleSignIn,
           ),
-          if (_parsedTasks.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.auto_awesome_rounded, color: Colors.amberAccent),
-              onPressed: _isProcessing ? null : _showRecapDialog,
-            ),
           IconButton(
             icon: const Icon(Icons.vpn_key_rounded, color: Colors.white24),
             onPressed: () => _showApiKeyPopup(),
