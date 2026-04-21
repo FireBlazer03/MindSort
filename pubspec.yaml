@@ -54,6 +54,8 @@ dependencies:
   intl: ^0.20.2
   animate_do: ^5.1.0
   google_fonts: ^8.0.2
+  shimmer: ^3.0.0
+  flutter_slidable: ^4.0.3
 
 dev_dependencies:
   flutter_test:

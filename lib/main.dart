@@ -15,6 +15,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:csv/csv.dart';
@@ -1036,67 +1038,78 @@ class _RecordingScreenState extends State<RecordingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
+      backgroundColor: themeManager.themeData.scaffoldBackgroundColor,
+      resizeToAvoidBottomInset: false,
       extendBody: true,
-      appBar: AppBar(
-        toolbarHeight: 90,
-        title: Text(
-          "MindSort",
-          style: GoogleFonts.syne(
-            fontWeight: FontWeight.w900,
-            fontSize: 24,
-            letterSpacing: -1.0,
-            height: 1.0,
-          ),
-        ),
-        centerTitle: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.account_circle_rounded,
-              color: _isGoogleConnected ? Colors.blueAccent : Colors.white24,
-            ),
-            onPressed: _handleGoogleSignIn,
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded),
-            onSelected: (value) {
-              if (value == 'pdf') _exportToPDF();
-              if (value == 'csv') _exportToCSV();
-              if (value == 'wrapped') {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => WrappedScreen(tasks: _parsedTasks, completedCount: _completedCount)
-                ));
-              }
-              if (value == 'zinc') themeManager.setTheme(MindTheme.zinc);
-              if (value == 'cyberpunk') themeManager.setTheme(MindTheme.cyberpunk);
-              if (value == 'midnight') themeManager.setTheme(MindTheme.midnight);
-              if (value == 'api') _showApiKeyPopup();
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'wrapped', child: Text("View Wrapped")),
-              const PopupMenuDivider(),
-              const PopupMenuItem(value: 'zinc', child: Text("Theme: Zinc")),
-              const PopupMenuItem(value: 'cyberpunk', child: Text("Theme: Cyberpunk")),
-              const PopupMenuItem(value: 'midnight', child: Text("Theme: Midnight")),
-              const PopupMenuDivider(),
-              const PopupMenuItem(value: 'pdf', child: Text("Export PDF")),
-              const PopupMenuItem(value: 'csv', child: Text("Export CSV")),
-              const PopupMenuDivider(),
-              const PopupMenuItem(value: 'api', child: Text("Change API Key")),
-            ],
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildMorphingBottomBar(context),
       body: GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 110,
+              collapsedHeight: 80,
+              floating: false,
+              pinned: true,
+              backgroundColor: themeManager.themeData.scaffoldBackgroundColor.withOpacity(0.9),
+              flexibleSpace: ClipRRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: FlexibleSpaceBar(
+                    titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+                    title: Text(
+                      "MindSort",
+                      style: GoogleFonts.syne(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 24,
+                        letterSpacing: -1.0,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    Icons.account_circle_rounded,
+                    color: _isGoogleConnected ? Colors.blueAccent : Colors.white24,
+                  ),
+                  onPressed: _handleGoogleSignIn,
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert_rounded),
+                  onSelected: (value) {
+                    if (value == 'pdf') _exportToPDF();
+                    if (value == 'csv') _exportToCSV();
+                    if (value == 'wrapped') {
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => WrappedScreen(tasks: _parsedTasks, completedCount: _completedCount)
+                      ));
+                    }
+                    if (value == 'zinc') themeManager.setTheme(MindTheme.zinc);
+                    if (value == 'cyberpunk') themeManager.setTheme(MindTheme.cyberpunk);
+                    if (value == 'midnight') themeManager.setTheme(MindTheme.midnight);
+                    if (value == 'api') _showApiKeyPopup();
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'wrapped', child: Text("View Wrapped")),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(value: 'zinc', child: Text("Theme: Zinc")),
+                    const PopupMenuItem(value: 'cyberpunk', child: Text("Theme: Cyberpunk")),
+                    const PopupMenuItem(value: 'midnight', child: Text("Theme: Midnight")),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(value: 'pdf', child: Text("Export PDF")),
+                    const PopupMenuItem(value: 'csv', child: Text("Export CSV")),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem(value: 'api', child: Text("Change API Key")),
+                  ],
+                ),
+              ],
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
@@ -1143,89 +1156,11 @@ class _RecordingScreenState extends State<RecordingScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
-
-                    // GLASSMORPHIC ACTION ISLAND
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(32),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
-                            borderRadius: BorderRadius.circular(32),
-                            border: Border.all(color: Colors.white.withOpacity(0.08)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildIslandButton(Icons.image_rounded, () => _pickImage(ImageSource.gallery)),
-                              const SizedBox(width: 12),
-                              GestureDetector(
-                                onTap: _isProcessing ? null : _toggleRecording,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    if (_isListening) _buildPulseEffect(),
-                                    AnimatedContainer(
-                                      duration: const Duration(milliseconds: 400),
-                                      height: 72,
-                                      width: 72,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: _isProcessing 
-                                              ? [const Color(0xFFFACC15), const Color(0xFFEAB308)]
-                                              : (_isListening 
-                                                  ? [const Color(0xFFF43F5E), const Color(0xFFE11D48)]
-                                                  : [themeManager.themeData.colorScheme.primary, themeManager.themeData.colorScheme.primary.withBlue(255)]),
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: (_isListening || _isProcessing)
-                                                ? (_isProcessing ? Colors.amber : Colors.pinkAccent).withOpacity(0.5)
-                                                : themeManager.themeData.colorScheme.primary.withOpacity(0.3),
-                                            blurRadius: 20,
-                                            spreadRadius: 2,
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        _isProcessing ? Icons.sync_rounded : (_isListening ? Icons.stop_rounded : Icons.mic_rounded),
-                                        size: 28,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              _buildIslandButton(Icons.camera_alt_rounded, () => _pickImage(ImageSource.camera)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-                    Text(
-                      _isProcessing ? "SYNCHRONIZING..." : (_isListening ? "RECORDING..." : "VOICE OR VISUAL DUMP"),
-                      style: GoogleFonts.plusJakartaSans(
-                        color: _isProcessing ? const Color(0xFFFACC15) : Colors.white.withOpacity(0.3),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    
                     if (_error != null) _buildErrorContainer(),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 32),
 
-                    // FILTER TABS (Premium segmented style)
+                    // FILTER TABS
                     if (_parsedTasks.isNotEmpty) ...[
                       Align(
                         alignment: Alignment.centerLeft,
@@ -1241,10 +1176,14 @@ class _RecordingScreenState extends State<RecordingScreen> {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: InkWell(
-                                onTap: () => setState(() => _currentFilter = filter),
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  setState(() => _currentFilter = filter);
+                                },
                                 borderRadius: BorderRadius.circular(12),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutCubic,
                                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                   decoration: BoxDecoration(
                                     color: isSelected ? Colors.white : Colors.white.withOpacity(0.03),
@@ -1274,16 +1213,26 @@ class _RecordingScreenState extends State<RecordingScreen> {
               ),
             ),
 
-            const Divider(color: Colors.white10, height: 1),
-
-            Expanded(
-              child: _parsedTasks.isEmpty && !_isProcessing
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: _parsedTasks.length,
-                    itemBuilder: (context, index) {
+            if (_isProcessing)
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildShimmerCard(),
+                    childCount: 3,
+                  ),
+                ),
+              )
+            else if (_parsedTasks.isEmpty)
+              SliverFillRemaining(
+                child: _buildEmptyState(),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 140),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
                       final item = _parsedTasks[index];
                       final bool matchesCategory = _currentFilter == 'All' || item.type.toLowerCase() == _currentFilter.toLowerCase();
                       final bool matchesSearch = item.title.toLowerCase().contains(_searchQuery);
@@ -1297,7 +1246,137 @@ class _RecordingScreenState extends State<RecordingScreen> {
                       }
                       return const SizedBox.shrink();
                     },
+                    childCount: _parsedTasks.length,
                   ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMorphingBottomBar(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom > 0 ? MediaQuery.of(context).viewInsets.bottom + 10 : 30.0;
+    
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: themeManager.themeData.scaffoldBackgroundColor.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(32),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 30,
+                        spreadRadius: -5,
+                      )
+                    ]
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildIslandButton(Icons.image_rounded, () => _pickImage(ImageSource.gallery)),
+                      const SizedBox(width: 16),
+                      GestureDetector(
+                        onTap: _isProcessing ? null : _toggleRecording,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (_isListening) _buildPulseEffect(),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutBack,
+                              height: _isListening ? 64 : 56,
+                              width: _isListening ? 64 : 56,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: _isProcessing 
+                                      ? [const Color(0xFFFACC15), const Color(0xFFEAB308)]
+                                      : (_isListening 
+                                          ? [const Color(0xFFF43F5E), const Color(0xFFE11D48)]
+                                          : [themeManager.themeData.colorScheme.primary, themeManager.themeData.colorScheme.primary.withBlue(255)]),
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (_isListening || _isProcessing)
+                                        ? (_isProcessing ? Colors.amber : Colors.pinkAccent).withOpacity(0.5)
+                                        : themeManager.themeData.colorScheme.primary.withOpacity(0.4),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                _isProcessing ? Icons.sync_rounded : (_isListening ? Icons.stop_rounded : Icons.mic_rounded),
+                                size: 24,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      _buildIslandButton(Icons.camera_alt_rounded, () => _pickImage(ImageSource.camera)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerCard() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: themeManager.themeData.cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Shimmer.fromColors(
+        baseColor: Colors.white.withOpacity(0.05),
+        highlightColor: Colors.white.withOpacity(0.1),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(height: 16, width: double.infinity, color: Colors.white),
+                  const SizedBox(height: 12),
+                  Container(height: 12, width: 100, color: Colors.white),
+                ],
+              ),
             ),
           ],
         ),
@@ -1349,10 +1428,13 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   Widget _buildIslandButton(IconData icon, VoidCallback onPressed) {
     return InkWell(
-      onTap: onPressed,
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onPressed();
+      },
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.05),
           shape: BoxShape.circle,
@@ -1368,8 +1450,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
       duration: const Duration(seconds: 1),
       builder: (context, double value, child) {
         return Container(
-          width: 72 + (40 * value),
-          height: 72 + (40 * value),
+          width: 56 + (40 * value),
+          height: 56 + (40 * value),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFFF43F5E).withOpacity(1 - value), width: 2),
@@ -1451,6 +1533,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
         updatedSubTasks[subIndex] = subTask.replaceFirst('✓ ', '');
       } else {
         updatedSubTasks[subIndex] = '✓ $subTask';
+        HapticFeedback.lightImpact();
       }
       
       _parsedTasks[taskIndex] = MindTask(
@@ -1482,22 +1565,32 @@ class _RecordingScreenState extends State<RecordingScreen> {
         accentColor = themeManager.themeData.colorScheme.primary;
     }
 
-    return Dismissible(
-      key: Key(item.id),
-      background: _buildDismissBackground(Alignment.centerLeft, Colors.green),
-      secondaryBackground: _buildDismissBackground(Alignment.centerRight, Colors.redAccent),
-      onDismissed: (direction) => _handleDismiss(item, index, accentColor),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: themeManager.themeData.cardTheme.color,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: themeManager.themeData.cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Slidable(
+        key: Key(item.id),
+        endActionPane: ActionPane(
+          motion: const StretchMotion(),
+          children: [
+            SlidableAction(
+              onPressed: (context) => _handleDismiss(item, index, accentColor),
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.redAccent,
+              icon: Icons.delete_rounded,
+              label: 'Handle',
+              borderRadius: BorderRadius.circular(20),
             ),
           ],
         ),
@@ -1505,7 +1598,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
           children: [
             ListTile(
               contentPadding: const EdgeInsets.all(16),
-              onLongPress: () => _showEditDialog(context, index),
+              onLongPress: () {
+                HapticFeedback.mediumImpact();
+                _showEditDialog(context, index);
+              },
               leading: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -1521,6 +1617,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   fontSize: 16,
                   color: Colors.white,
                   letterSpacing: -0.3,
+                  height: 1.3,
                 )
               ),
               subtitle: Padding(
@@ -1565,24 +1662,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
     );
   }
 
-  Widget _buildDismissBackground(Alignment alignment, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      alignment: alignment,
-      padding: EdgeInsets.symmetric(horizontal: 24),
-      child: Icon(
-        alignment == Alignment.centerLeft ? Icons.check_circle_rounded : Icons.delete_rounded,
-        color: color,
-        size: 28,
-      ),
-    );
-  }
-
   void _handleDismiss(MindTask item, int index, Color accentColor) {
+    HapticFeedback.heavyImpact();
     final deletedItem = item;
     final deletedIndex = index;
     _deleteTask(index);
@@ -1601,6 +1682,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
           label: 'UNDO', 
           textColor: accentColor,
           onPressed: () {
+            HapticFeedback.mediumImpact();
             _restoreTask(deletedIndex, deletedItem);
             _decrementCompletedCount();
           }
@@ -1631,13 +1713,25 @@ class _RecordingScreenState extends State<RecordingScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildActionIconButton(Icons.edit_note_rounded, () => _showEditDialog(context, index)),
+        _buildActionIconButton(Icons.edit_note_rounded, () {
+          HapticFeedback.selectionClick();
+          _showEditDialog(context, index);
+        }),
         if (_isGoogleConnected && item.type != 'event')
-          _buildActionIconButton(Icons.sync_rounded, () => _syncToGoogle(item)),
+          _buildActionIconButton(Icons.sync_rounded, () {
+            HapticFeedback.selectionClick();
+            _syncToGoogle(item);
+          }),
         if (item.subTasks.isEmpty && item.type != 'event')
-          _buildActionIconButton(Icons.auto_awesome_mosaic_rounded, () => _chunkTask(index)),
+          _buildActionIconButton(Icons.auto_awesome_mosaic_rounded, () {
+            HapticFeedback.selectionClick();
+            _chunkTask(index);
+          }),
         if (item.type == 'event')
-          _buildActionIconButton(Icons.event_available_rounded, () => _addToCalendar(item)),
+          _buildActionIconButton(Icons.event_available_rounded, () {
+            HapticFeedback.selectionClick();
+            _addToCalendar(item);
+          }),
       ],
     );
   }
