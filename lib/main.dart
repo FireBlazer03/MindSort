@@ -82,19 +82,24 @@ class ThemeManager extends ChangeNotifier {
           useMaterial3: true,
           brightness: Brightness.dark,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.cyanAccent,
+            seedColor: const Color(0xFF00F0FF),
             brightness: Brightness.dark,
-            surface: const Color(0xFF0D0221),
-            background: const Color(0xFF0D0221),
+            surface: const Color(0xFF050511),
+            background: const Color(0xFF050511),
+            primary: const Color(0xFFFF003C), // Cyberpunk pink
+            secondary: const Color(0xFFFCEE09), // Cyber yellow
           ),
           textTheme: GoogleFonts.orbitronTextTheme(ThemeData.dark().textTheme),
           cardTheme: CardThemeData(
-            color: const Color(0xFF1B065E),
+            color: const Color(0xFF101026),
+            elevation: 10,
+            shadowColor: const Color(0xFF00F0FF).withOpacity(0.2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(4),
-              side: const BorderSide(color: Colors.cyanAccent, width: 0.5),
+              side: BorderSide(color: const Color(0xFF00F0FF).withOpacity(0.5), width: 1),
             ),
           ),
+          scaffoldBackgroundColor: const Color(0xFF050511),
         );
       case MindTheme.midnight:
         return ThemeData(
@@ -103,22 +108,23 @@ class ThemeManager extends ChangeNotifier {
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFF00FF9C),
             brightness: Brightness.dark,
-            surface: Colors.black,
-            background: Colors.black,
+            surface: const Color(0xFF02040A), // Deepest midnight black
+            background: const Color(0xFF02040A),
             primary: const Color(0xFF00FF9C), // Spring Green accent
+            secondary: const Color(0xFF7000FF), // Deep purple contrast
           ),
-          textTheme: GoogleFonts.lexendTextTheme(ThemeData.dark().textTheme),
+          textTheme: GoogleFonts.spaceGroteskTextTheme(ThemeData.dark().textTheme),
           cardTheme: CardThemeData(
-            color: const Color(0xFF0A0A0A),
+            color: const Color(0xFF0A0E17), // Slightly lifted dark blue-grey
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.white.withOpacity(0.05)),
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: const Color(0xFF1E293B).withOpacity(0.8), width: 1),
             ),
           ),
-          scaffoldBackgroundColor: Colors.black,
+          scaffoldBackgroundColor: const Color(0xFF02040A),
         );
-      default:
+      default: // Zinc
         return ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,
@@ -127,16 +133,18 @@ class ThemeManager extends ChangeNotifier {
             brightness: Brightness.dark,
             surface: const Color(0xFF09090B),
             background: const Color(0xFF09090B),
+            primary: const Color(0xFF6366F1),
           ),
-          textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+          textTheme: GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme),
           cardTheme: CardThemeData(
-            color: const Color(0xFF18181B),
+            color: const Color(0xFF18181B), // Zinc 900
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.white.withOpacity(0.08)),
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
             ),
           ),
+          scaffoldBackgroundColor: const Color(0xFF09090B),
         );
     }
   }
