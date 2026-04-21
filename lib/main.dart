@@ -800,6 +800,91 @@ class _RecordingScreenState extends State<RecordingScreen> {
     );
   }
 
+  void _showManualAddDialog() {
+    final TextEditingController titleController = TextEditingController();
+    String selectedType = 'task';
+    String selectedPriority = 'Medium';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.grey[900],
+              title: const Text("Add Thought Manually", style: TextStyle(color: Colors.white)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: "What's on your mind?",
+                      hintStyle: TextStyle(color: Colors.white54),
+                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedType,
+                    dropdownColor: Colors.grey[800],
+                    style: const TextStyle(color: Colors.white),
+                    items: const [
+                      DropdownMenuItem(value: 'task', child: Text('Task')),
+                      DropdownMenuItem(value: 'event', child: Text('Event')),
+                      DropdownMenuItem(value: 'note', child: Text('Note')),
+                    ],
+                    onChanged: (val) => setDialogState(() => selectedType = val!),
+                    decoration: const InputDecoration(labelText: 'Type', labelStyle: TextStyle(color: Colors.white54)),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: selectedPriority,
+                    dropdownColor: Colors.grey[800],
+                    style: const TextStyle(color: Colors.white),
+                    items: const [
+                      DropdownMenuItem(value: 'High', child: Text('High')),
+                      DropdownMenuItem(value: 'Medium', child: Text('Medium')),
+                      DropdownMenuItem(value: 'Low', child: Text('Low')),
+                    ],
+                    onChanged: (val) => setDialogState(() => selectedPriority = val!),
+                    decoration: const InputDecoration(labelText: 'Priority', labelStyle: TextStyle(color: Colors.white54)),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel", style: TextStyle(color: Colors.white54)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (titleController.text.trim().isNotEmpty) {
+                      final newTask = MindTask(
+                        id: DateTime.now().toString() + titleController.text.trim(),
+                        title: titleController.text.trim(),
+                        type: selectedType,
+                        priority: selectedPriority,
+                      );
+                      setState(() {
+                        _parsedTasks.insert(0, newTask);
+                      });
+                      _saveTasks();
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Save", style: TextStyle(color: Colors.amber)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _toggleRecording() async {
     try {
       HapticFeedback.heavyImpact(); // Vibrate on tap
@@ -1295,6 +1380,8 @@ class _RecordingScreenState extends State<RecordingScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      _buildIslandButton(Icons.edit_note_rounded, _showManualAddDialog),
+                      const SizedBox(width: 12),
                       _buildIslandButton(Icons.image_rounded, () => _pickImage(ImageSource.gallery)),
                       const SizedBox(width: 16),
                       GestureDetector(
