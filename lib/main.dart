@@ -15,6 +15,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -1039,7 +1040,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: themeManager.themeData.scaffoldBackgroundColor,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       extendBody: true,
       bottomNavigationBar: _buildMorphingBottomBar(context),
       body: GestureDetector(
@@ -1225,6 +1226,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
               )
             else if (_parsedTasks.isEmpty)
               SliverFillRemaining(
+                hasScrollBody: false,
                 child: _buildEmptyState(),
               )
             else
@@ -1257,7 +1259,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
   }
 
   Widget _buildMorphingBottomBar(BuildContext context) {
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom > 0 ? MediaQuery.of(context).viewInsets.bottom + 10 : 30.0;
+    final bottomPadding = 30.0; // Let resizeToAvoidBottomInset handle the keyboard lifting
     
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -1659,7 +1661,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
           ],
         ),
       ),
-    );
+    ).animate().scaleXY(begin: 0.95, end: 1.0, curve: Curves.easeOutBack, duration: 400.ms).fadeIn(duration: 400.ms);
   }
 
   void _handleDismiss(MindTask item, int index, Color accentColor) {
