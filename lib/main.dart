@@ -900,7 +900,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
               }
               if (value == 'zinc') themeManager.setTheme(MindTheme.zinc);
               if (value == 'cyberpunk') themeManager.setTheme(MindTheme.cyberpunk);
-              if (value == 'paper') themeManager.setTheme(MindTheme.paper);
+              if (value == 'midnight') themeManager.setTheme(MindTheme.midnight);
               if (value == 'api') _showApiKeyPopup();
             },
             itemBuilder: (context) => [
