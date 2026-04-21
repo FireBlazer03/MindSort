@@ -1763,7 +1763,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
     _incrementCompletedCount();
 
     ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
+    final snackBarController = ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         duration: const Duration(seconds: 2),
         backgroundColor: const Color(0xFF18181B),
@@ -1783,6 +1783,13 @@ class _RecordingScreenState extends State<RecordingScreen> {
         ),
       )
     );
+
+    // Force close the SnackBar after 2 seconds to override any accessibility settings keeping it stuck
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        snackBarController.close();
+      }
+    });
   }
 
   Widget _buildPriorityDot(String priority) {
