@@ -64,7 +64,7 @@ class MindTask {
 }
 
 // --- THEME SYSTEM ---
-enum MindTheme { zinc, cyberpunk, paper }
+enum MindTheme { zinc, cyberpunk, midnight }
 
 class ThemeManager extends ChangeNotifier {
   MindTheme _currentTheme = MindTheme.zinc;
@@ -96,31 +96,27 @@ class ThemeManager extends ChangeNotifier {
             ),
           ),
         );
-      case MindTheme.paper:
+      case MindTheme.midnight:
         return ThemeData(
           useMaterial3: true,
-          brightness: Brightness.light,
+          brightness: Brightness.dark,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF795548),
-            brightness: Brightness.light,
-            surface: const Color(0xFFFDFCF8), // Warm paper white
-            background: const Color(0xFFFDFCF8),
-            primary: const Color(0xFF4E342E), // Deep brown
+            seedColor: const Color(0xFF00FF9C),
+            brightness: Brightness.dark,
+            surface: Colors.black,
+            background: Colors.black,
+            primary: const Color(0xFF00FF9C), // Spring Green accent
           ),
-          textTheme: GoogleFonts.ebGaramondTextTheme(ThemeData.light().textTheme).copyWith(
-            titleLarge: GoogleFonts.ebGaramond(fontWeight: FontWeight.bold, color: const Color(0xFF2D2422)),
-            bodyMedium: GoogleFonts.ebGaramond(fontSize: 16, color: const Color(0xFF4A3F3B)),
-          ),
+          textTheme: GoogleFonts.lexendTextTheme(ThemeData.dark().textTheme),
           cardTheme: CardThemeData(
-            color: const Color(0xFFFEFBF0), // Slightly different shade for cards
-            elevation: 1,
-            shadowColor: Colors.black.withOpacity(0.05),
+            color: const Color(0xFF0A0A0A),
+            elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: const Color(0xFFE8E2D0), width: 1),
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.white.withOpacity(0.05)),
             ),
           ),
-          scaffoldBackgroundColor: const Color(0xFFFDFCF8),
+          scaffoldBackgroundColor: Colors.black,
         );
       default:
         return ThemeData(
