@@ -208,7 +208,7 @@ class WrappedScreen extends StatelessWidget {
                 child: const Text(
                   "YOUR MINDSORT\nWRAPPED",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.black, height: 1),
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, height: 1),
                 ),
               ),
               const SizedBox(height: 40),
@@ -267,7 +267,7 @@ class WrappedScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, opacity: 0.7)),
+          Text(label, style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.7))),
           Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         ],
       ),
@@ -308,13 +308,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
   // --- EXPORT LOGIC ---
   Future<void> _exportToCSV() async {
-    List<List<dynamic>> rows = [
-      ["Title", "Type", "Priority", "Start Time"]
-    ];
+    String csv = "Title,Type,Priority,Start Time\n";
     for (var task in _parsedTasks) {
-      rows.add([task.title, task.type, task.priority, task.startTime?.toString() ?? ""]);
+      csv += "${task.title},${task.type},${task.priority},${task.startTime?.toString() ?? ""}\n";
     }
-    String csv = const ListToCsvConverter().convert(rows);
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/mindsort_tasks.csv');
     await file.writeAsString(csv);
@@ -866,13 +863,16 @@ class _RecordingScreenState extends State<RecordingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
+        toolbarHeight: 80,
         title: Text(
           "MindSort",
           style: GoogleFonts.syne(
             fontWeight: FontWeight.w800,
-            fontSize: 24,
+            fontSize: 28,
             letterSpacing: -1,
+            height: 1.2,
           ),
         ),
         centerTitle: true,
@@ -920,163 +920,171 @@ class _RecordingScreenState extends State<RecordingScreen> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 8),
-          
-          // STATS COUNTER
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                _buildStatChip("Done", _completedCount.toString(), const Color(0xFF2DD4BF)),
-                const SizedBox(width: 12),
-                _buildStatChip("Pending", _parsedTasks.length.toString(), const Color(0xFF6366F1)),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // SEARCH BAR (shadcn style)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFF18181B),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.08)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 8),
+                  
+                  // STATS COUNTER
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        _buildStatChip("Done", _completedCount.toString(), const Color(0xFF2DD4BF)),
+                        const SizedBox(width: 12),
+                        _buildStatChip("Pending", _parsedTasks.length.toString(), const Color(0xFF6366F1)),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-                style: const TextStyle(fontSize: 14, color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: "Search thoughts...",
-                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 14),
-                  prefixIcon: Icon(Icons.search, size: 18, color: Colors.white.withOpacity(0.2)),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ),
 
-          const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-          // RECORDING ACTION AREA
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildModernIconButton(Icons.image_outlined, () => _pickImage(ImageSource.gallery)),
-              const SizedBox(width: 24),
-              GestureDetector(
-                onTap: _isProcessing ? null : _toggleRecording,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (_isListening)
-                      _buildPulseEffect(),
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 400),
-                      height: _isListening ? 120 : 100,
-                      width: _isListening ? 120 : 100,
+                  // SEARCH BAR (shadcn style)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      height: 48,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: _isProcessing 
-                              ? [const Color(0xFFFACC15), const Color(0xFFEAB308)] // Yellow-400 to 600
-                              : (_isListening 
-                                  ? [const Color(0xFFF43F5E), const Color(0xFFE11D48)] // Rose-500 to 600
-                                  : [const Color(0xFF6366F1), const Color(0xFF4F46E5)]), // Indigo-500 to 600
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
+                        color: const Color(0xFF18181B),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withOpacity(0.08)),
                         boxShadow: [
                           BoxShadow(
-                            color: (_isListening || _isProcessing)
-                                ? (_isProcessing ? Colors.amber : Colors.pinkAccent).withOpacity(0.4)
-                                : const Color(0xFF6366F1).withOpacity(0.3),
-                            blurRadius: 40,
-                            spreadRadius: _isListening ? 10 : 0,
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      child: Icon(
-                        _isProcessing ? Icons.sync : (_isListening ? Icons.stop : Icons.mic_none),
-                        size: 32,
-                        color: Colors.white,
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                        style: const TextStyle(fontSize: 14, color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: "Search thoughts...",
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 14),
+                          prefixIcon: Icon(Icons.search, size: 18, color: Colors.white.withOpacity(0.2)),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // RECORDING ACTION AREA
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildModernIconButton(Icons.image_outlined, () => _pickImage(ImageSource.gallery)),
+                      const SizedBox(width: 24),
+                      GestureDetector(
+                        onTap: _isProcessing ? null : _toggleRecording,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (_isListening)
+                              _buildPulseEffect(),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 400),
+                              height: _isListening ? 120 : 100,
+                              width: _isListening ? 120 : 100,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: _isProcessing 
+                                      ? [const Color(0xFFFACC15), const Color(0xFFEAB308)] // Yellow-400 to 600
+                                      : (_isListening 
+                                          ? [const Color(0xFFF43F5E), const Color(0xFFE11D48)] // Rose-500 to 600
+                                          : [const Color(0xFF6366F1), const Color(0xFF4F46E5)]), // Indigo-500 to 600
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (_isListening || _isProcessing)
+                                        ? (_isProcessing ? Colors.amber : Colors.pinkAccent).withOpacity(0.4)
+                                        : const Color(0xFF6366F1).withOpacity(0.3),
+                                    blurRadius: 40,
+                                    spreadRadius: _isListening ? 10 : 0,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                _isProcessing ? Icons.sync : (_isListening ? Icons.stop : Icons.mic_none),
+                                size: 32,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      _buildModernIconButton(Icons.camera_outlined, () => _pickImage(ImageSource.camera)),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+                  Text(
+                    _isProcessing ? "Analyzing..." : (_isListening ? "Listening..." : "Voice or Visual Dump"),
+                    style: TextStyle(
+                      color: _isProcessing ? const Color(0xFFFACC15) : Colors.white.withOpacity(0.5),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  
+                  if (_error != null)
+                    _buildErrorContainer(),
+
+                  const SizedBox(height: 32),
+
+                  // FILTER TABS (Pill style)
+                  if (_parsedTasks.isNotEmpty) ...[
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: ['All', 'Task', 'Event', 'Note'].map((filter) {
+                          final isSelected = _currentFilter == filter;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: InkWell(
+                              onTap: () => setState(() => _currentFilter = filter),
+                              borderRadius: BorderRadius.circular(20),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? Colors.white : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
+                                  ),
+                                ),
+                                child: Text(
+                                  filter,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isSelected ? Colors.black : Colors.white.withOpacity(0.6),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                   ],
-                ),
-              ),
-              const SizedBox(width: 24),
-              _buildModernIconButton(Icons.camera_outlined, () => _pickImage(ImageSource.camera)),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-          Text(
-            _isProcessing ? "Analyzing..." : (_isListening ? "Listening..." : "Voice or Visual Dump"),
-            style: TextStyle(
-              color: _isProcessing ? const Color(0xFFFACC15) : Colors.white.withOpacity(0.5),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-          ),
-          
-          if (_error != null)
-            _buildErrorContainer(),
-
-          const SizedBox(height: 32),
-
-          // FILTER TABS (Pill style)
-          if (_parsedTasks.isNotEmpty) ...[
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: ['All', 'Task', 'Event', 'Note'].map((filter) {
-                  final isSelected = _currentFilter == filter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: InkWell(
-                      onTap: () => setState(() => _currentFilter = filter),
-                      borderRadius: BorderRadius.circular(20),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.white : Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected ? Colors.white : Colors.white.withOpacity(0.1),
-                          ),
-                        ),
-                        child: Text(
-                          filter,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isSelected ? Colors.black : Colors.white.withOpacity(0.6),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-          ],
+          ),
 
           const Divider(color: Colors.white10, height: 1),
 
@@ -1375,6 +1383,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        IconButton(
+          icon: Icon(Icons.edit_note_rounded, color: Colors.white.withOpacity(0.3), size: 20),
+          onPressed: () => _showEditDialog(context, index),
+        ),
         if (_isGoogleConnected && item.type != 'event')
           IconButton(
             icon: Icon(Icons.sync, color: Colors.white.withOpacity(0.2), size: 18),
