@@ -177,102 +177,264 @@ class _MindSortAppState extends State<MindSortApp> {
   }
 }
 
-// --- INTERACTIVE RECAP SCREEN ---
-class WrappedScreen extends StatelessWidget {
+// --- INTERACTIVE RECAP SCREEN (STORY STYLE) ---
+class WrappedScreen extends StatefulWidget {
   final List<MindTask> tasks;
   final int completedCount;
 
   const WrappedScreen({super.key, required this.tasks, required this.completedCount});
 
   @override
-  Widget build(BuildContext context) {
-    final taskCount = tasks.where((t) => t.type == 'task').length;
-    final eventCount = tasks.where((t) => t.type == 'event').length;
-    final noteCount = tasks.where((t) => t.type == 'note').length;
+  State<WrappedScreen> createState() => _WrappedScreenState();
+}
 
+class _WrappedScreenState extends State<WrappedScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+  double _progress = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _startStoryTimer();
+  }
+
+  void _startStoryTimer() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 50));
+      if (!mounted) return false;
+      setState(() {
+        _progress += 0.01;
+      });
+      if (_progress >= 1.0) {
+        if (_currentPage < 3) {
+          _progress = 0.0;
+          _currentPage++;
+          _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+        } else {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.primary.withOpacity(0.2),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          PageView(
+            controller: _pageController,
+            onPageChanged: (i) => setState(() { _currentPage = i; _progress = 0.0; }),
             children: [
-              const SizedBox(height: 40),
-              FadeInDown(
-                child: const Text(
-                  "YOUR MINDSORT\nWRAPPED",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, height: 1),
-                ),
-              ),
-              const SizedBox(height: 40),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: FadeInUp(
-                    delay: const Duration(milliseconds: 500),
-                    child: PieChart(
-                      PieChartData(
-                        sections: [
-                          PieChartSectionData(value: taskCount.toDouble(), title: 'Tasks', color: Colors.indigoAccent, radius: 100),
-                          PieChartSectionData(value: eventCount.toDouble(), title: 'Events', color: Colors.orangeAccent, radius: 100),
-                          PieChartSectionData(value: noteCount.toDouble(), title: 'Notes', color: Colors.tealAccent, radius: 100),
-                        ],
-                      ),
+              _buildIntroPage(),
+              _buildStatsPage(),
+              _buildCompositionPage(),
+              _buildFinalPage(),
+            ],
+          ),
+          // Progress Bars
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: List.generate(4, (index) => Expanded(
+                  child: Container(
+                    height: 3,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: index < _currentPage ? 1.0 : (index == _currentPage ? _progress : 0.0),
+                      child: Container(color: Colors.white),
                     ),
                   ),
-                ),
+                )),
               ),
-              FadeIn(
-                delay: const Duration(seconds: 1),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Column(
-                    children: [
-                      _buildWrappedStat("Thoughts Captured", (tasks.length + completedCount).toString()),
-                      _buildWrappedStat("Insights Processed", completedCount.toString()),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 56),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Keep Sorting"),
-                ),
-              ),
-            ],
+            ),
           ),
+          // Close button
+          Positioned(
+            top: 50,
+            right: 20,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntroPage() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF6366F1), Color(0xFFA855F7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FadeInDown(child: const Icon(Icons.auto_awesome, size: 80, color: Colors.white)),
+            const SizedBox(height: 30),
+            FadeInUp(
+              child: Text(
+                "YOUR MINDSORT\nWRAPPED",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.syne(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, height: 1),
+              ),
+            ),
+            const SizedBox(height: 20),
+            FadeIn(
+              delay: const Duration(milliseconds: 500),
+              child: const Text("Take a moment to see how far you've come.", style: TextStyle(color: Colors.white70)),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildWrappedStat(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildStatsPage() {
+    return Container(
+      color: const Color(0xFF0F172A),
+      padding: const EdgeInsets.all(30),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: TextStyle(fontSize: 16, color: Colors.black.withOpacity(0.7))),
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+          FadeInLeft(
+            child: _buildBigStatCard("Thoughts Captured", (widget.tasks.length + widget.completedCount).toString(), Icons.psychology_outlined),
+          ),
+          const SizedBox(height: 20),
+          FadeInRight(
+            delay: const Duration(milliseconds: 300),
+            child: _buildBigStatCard("Tasks Completed", widget.completedCount.toString(), Icons.verified_outlined),
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCompositionPage() {
+    final taskCount = widget.tasks.where((t) => t.type == 'task').length;
+    final eventCount = widget.tasks.where((t) => t.type == 'event').length;
+    final noteCount = widget.tasks.where((t) => t.type == 'note').length;
+
+    return Container(
+      color: const Color(0xFF09090B),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text("YOUR MIND COMPOSITION", style: GoogleFonts.syne(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 40),
+          SizedBox(
+            height: 250,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 4,
+                centerSpaceRadius: 40,
+                sections: [
+                  PieChartSectionData(value: taskCount.toDouble(), title: 'Tasks', color: const Color(0xFF6366F1), radius: 60, titleStyle: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                  PieChartSectionData(value: eventCount.toDouble(), title: 'Events', color: const Color(0xFFF97316), radius: 60, titleStyle: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                  PieChartSectionData(value: noteCount.toDouble(), title: 'Notes', color: const Color(0xFF2DD4BF), radius: 60, titleStyle: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+          FadeInUp(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildSmallLegend("Tasks", const Color(0xFF6366F1)),
+                _buildSmallLegend("Events", const Color(0xFFF97316)),
+                _buildSmallLegend("Notes", const Color(0xFF2DD4BF)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinalPage() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF000000), Color(0xFF1E293B)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ZoomIn(child: const Icon(Icons.celebration, size: 80, color: Colors.amberAccent)),
+            const SizedBox(height: 30),
+            Text("Keep Growing.", style: GoogleFonts.syne(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+            const SizedBox(height: 40),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  minimumSize: const Size(double.infinity, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Back to My Mind", style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBigStatCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 40, color: Colors.indigoAccent),
+          const SizedBox(width: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, style: const TextStyle(fontSize: 36, fontWeight: FontWeight.black, color: Colors.white)),
+              Text(label, style: const TextStyle(fontSize: 14, color: Colors.white54)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallLegend(String label, Color color) {
+    return Column(
+      children: [
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.white54)),
+      ],
     );
   }
 }
@@ -908,7 +1070,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'zinc', child: Text("Theme: Zinc")),
               const PopupMenuItem(value: 'cyberpunk', child: Text("Theme: Cyberpunk")),
-              const PopupMenuItem(value: 'paper', child: Text("Theme: Paper")),
+              const PopupMenuItem(value: 'midnight', child: Text("Theme: Midnight")),
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'pdf', child: Text("Export PDF")),
               const PopupMenuItem(value: 'csv', child: Text("Export CSV")),
