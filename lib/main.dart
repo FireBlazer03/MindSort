@@ -1221,13 +1221,10 @@ class _RecordingScreenState extends State<RecordingScreen> {
             ),
 
             if (_isProcessing)
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildShimmerCard(),
-                    childCount: 3,
-                  ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: _buildProcessingIndicator(),
                 ),
               ),
 
@@ -1354,41 +1351,40 @@ class _RecordingScreenState extends State<RecordingScreen> {
     );
   }
 
-  Widget _buildShimmerCard() {
+  Widget _buildProcessingIndicator() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: themeManager.themeData.cardTheme.color,
+        color: themeManager.themeData.colorScheme.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: themeManager.themeData.colorScheme.primary.withOpacity(0.1)),
       ),
-      padding: const EdgeInsets.all(16),
-      child: Shimmer.fromColors(
-        baseColor: Colors.white.withOpacity(0.05),
-        highlightColor: Colors.white.withOpacity(0.1),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(themeManager.themeData.colorScheme.primary),
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Shimmer.fromColors(
+              baseColor: themeManager.themeData.colorScheme.primary.withOpacity(0.5),
+              highlightColor: Colors.white,
+              child: Text(
+                "Processing thought...",
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(height: 16, width: double.infinity, color: Colors.white),
-                  const SizedBox(height: 12),
-                  Container(height: 12, width: 100, color: Colors.white),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
