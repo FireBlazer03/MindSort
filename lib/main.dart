@@ -1136,8 +1136,9 @@ class _RecordingScreenState extends State<RecordingScreen> {
       bottomNavigationBar: _buildMorphingBottomBar(context),
       body: GestureDetector(
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        child: SlidableAutoCloseBehavior(
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
             SliverAppBar(
               expandedHeight: 110,
@@ -1657,25 +1658,20 @@ class _RecordingScreenState extends State<RecordingScreen> {
         accentColor = themeManager.themeData.colorScheme.primary;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: themeManager.themeData.cardTheme.color,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
       child: Slidable(
         key: Key(item.id),
         endActionPane: ActionPane(
-          motion: const StretchMotion(),
-          dismissible: DismissiblePane(onDismissed: () => _handleDismiss(item, index, accentColor)),
+          motion: const BehindMotion(),
+          extentRatio: 0.3,
+          dismissible: DismissiblePane(
+            onDismissed: () => _handleDismiss(item, index, accentColor),
+            confirmDismiss: () async {
+              HapticFeedback.heavyImpact();
+              return true;
+            },
+          ),
           children: [
             SlidableAction(
               onPressed: (context) => _handleDismiss(item, index, accentColor),
@@ -1687,76 +1683,89 @@ class _RecordingScreenState extends State<RecordingScreen> {
             ),
           ],
         ),
-        child: Column(
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              onLongPress: () {
-                HapticFeedback.mediumImpact();
-                _showEditDialog(context, index);
-              },
-              leading: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: accentColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: themeManager.themeData.cardTheme.color,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                onLongPress: () {
+                  HapticFeedback.mediumImpact();
+                  _showEditDialog(context, index);
+                },
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, color: accentColor, size: 24),
                 ),
-                child: Icon(icon, color: accentColor, size: 24),
-              ),
-              title: Text(
-                item.title, 
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: Colors.white,
-                  letterSpacing: -0.3,
-                  height: 1.3,
-                )
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildPriorityDot(item.priority),
-                        const SizedBox(width: 6),
-                        Text(
-                          item.priority.toUpperCase(),
-                          style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white.withOpacity(0.3)),
-                        ),
-                      ],
-                    ),
-                    if (item.startTime != null)
+                title: Text(
+                  item.title, 
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: Colors.white,
+                    letterSpacing: -0.3,
+                    height: 1.3,
+                  )
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    children: [
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.access_time_filled_rounded, size: 14, color: Colors.white.withOpacity(0.2)),
-                          const SizedBox(width: 4),
+                          _buildPriorityDot(item.priority),
+                          const SizedBox(width: 6),
                           Text(
-                            "${item.startTime!.day}/${item.startTime!.month} ${item.startTime!.hour}:${item.startTime!.minute.toString().padLeft(2, '0')}",
-                            style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.3)),
+                            item.priority.toUpperCase(),
+                            style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white.withOpacity(0.3)),
                           ),
                         ],
                       ),
-                  ],
+                      if (item.startTime != null)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.access_time_filled_rounded, size: 14, color: Colors.white.withOpacity(0.2)),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${item.startTime!.day}/${item.startTime!.month} ${item.startTime!.hour}:${item.startTime!.minute.toString().padLeft(2, '0')}",
+                              style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.3)),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
+                trailing: _buildCardActions(item, index),
               ),
-              trailing: _buildCardActions(item, index),
-            ),
-            if (item.subTasks.isNotEmpty)
-              _buildSubTaskList(item, index),
-          ],
+              if (item.subTasks.isNotEmpty)
+                _buildSubTaskList(item, index),
+            ],
+          ),
         ),
       ),
     ).animate().scaleXY(begin: 0.95, end: 1.0, curve: Curves.easeOutBack, duration: 400.ms).fadeIn(duration: 400.ms);
   }
 
   void _handleDismiss(MindTask item, int index, Color accentColor) {
-    HapticFeedback.heavyImpact();
     final deletedItem = item;
     final deletedIndex = index;
     _deleteTask(index);
