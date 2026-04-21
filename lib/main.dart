@@ -101,20 +101,26 @@ class ThemeManager extends ChangeNotifier {
           useMaterial3: true,
           brightness: Brightness.light,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.brown,
+            seedColor: const Color(0xFF795548),
             brightness: Brightness.light,
-            surface: const Color(0xFFF5F5DC),
-            background: const Color(0xFFF5F5DC),
+            surface: const Color(0xFFFDFCF8), // Warm paper white
+            background: const Color(0xFFFDFCF8),
+            primary: const Color(0xFF4E342E), // Deep brown
           ),
-          textTheme: GoogleFonts.specialEliteTextTheme(ThemeData.light().textTheme),
+          textTheme: GoogleFonts.ebGaramondTextTheme(ThemeData.light().textTheme).copyWith(
+            titleLarge: GoogleFonts.ebGaramond(fontWeight: FontWeight.bold, color: const Color(0xFF2D2422)),
+            bodyMedium: GoogleFonts.ebGaramond(fontSize: 16, color: const Color(0xFF4A3F3B)),
+          ),
           cardTheme: CardThemeData(
-            color: const Color(0xFFFFF8E1),
-            elevation: 2,
+            color: const Color(0xFFFEFBF0), // Slightly different shade for cards
+            elevation: 1,
+            shadowColor: Colors.black.withOpacity(0.05),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(0),
-              side: const BorderSide(color: Colors.brown, width: 0.2),
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: const Color(0xFFE8E2D0), width: 1),
             ),
           ),
+          scaffoldBackgroundColor: const Color(0xFFFDFCF8),
         );
       default:
         return ThemeData(
@@ -267,8 +273,8 @@ class WrappedScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.7))),
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(fontSize: 16, color: Colors.black.withOpacity(0.7))),
+          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
         ],
       ),
     );
@@ -870,9 +876,9 @@ class _RecordingScreenState extends State<RecordingScreen> {
           "MindSort",
           style: GoogleFonts.syne(
             fontWeight: FontWeight.w900,
-            fontSize: 32,
-            letterSpacing: -1.5,
-            height: 1.0, // Tighter height to prevent top/bottom clipping
+            fontSize: 24, // Smaller as requested
+            letterSpacing: -1.0,
+            height: 1.0,
           ),
         ),
         centerTitle: false, // Give title more room to the left
