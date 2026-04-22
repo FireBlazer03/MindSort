@@ -1797,7 +1797,9 @@ class _RecordingScreenState extends State<RecordingScreen> {
     // Force close the SnackBar after 2 seconds to override any accessibility settings keeping it stuck
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
-        snackBarController.close();
+        try {
+          snackBarController.close();
+        } catch (_) {}
       }
     });
   }
