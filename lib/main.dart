@@ -1344,6 +1344,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
               ),
           ],
         ),
+        ),
       ),
     );
   }
